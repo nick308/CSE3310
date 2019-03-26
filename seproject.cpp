@@ -1,9 +1,17 @@
-//g++ seproject.cpp -lncurses
-//./a.out
-
+/*
+./chat_server.cpp 9000
+./chat_client 127.0.0.1 9000
+g++ seproject.cpp -lncurses
+./a.out
+*/
 #include <ncurses.h>
 #include <string.h>
 #include <iostream>
+
+
+
+
+
 char msgs[50][100];
 char help[50][100];
 int chatSize = 14;
@@ -102,10 +110,6 @@ void showHeader(int row, int col)
         mvprintw(row-3, i, "=");
     }
 }
-    
-
-
-
 void showMemList(int row, int col)
 {
     mvprintw(row/3, col-13, "Member List");
@@ -123,10 +127,9 @@ void showMemList(int row, int col)
     }
     
 }
-
 void showContent(char content[][100])
 {
-    initMsgs();
+
     int position = 5;
     for (int i = chatSize;i>=0;i--)
     {
@@ -178,7 +181,6 @@ void procCmd(char *fullcmd, int row, int col)
 
 
 }
-
 int main()
 {
     strcpy(roomName, "Lobby");
@@ -249,9 +251,10 @@ int main()
      else
      {
 
-         //clearChat(row, col);
+         //;
          //showMemList(row, col);
          addMsg(nameArray, msgArray);
+         //clearChat(row, col);
          showContent(msgs);
 
 
