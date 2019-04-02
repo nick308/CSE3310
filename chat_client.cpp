@@ -27,8 +27,10 @@ g++ chat_client.cpp -lncurses
 #include <ncurses.h>
 #include <string.h>
 
-using asio::ip::tcp;
+#include <string>
 
+using asio::ip::tcp;
+using namespace std;
 typedef std::deque<chat_message> chat_message_queue;
 
 
@@ -42,7 +44,16 @@ public:
   {
     do_connect(endpoints);
   }
+  void changeRoom(std::string roomName)
+  {
+    currentRoom = roomName;
 
+  }
+  string getRoom()
+  {
+    return currentRoom;
+
+  }
   void write(const chat_message& msg)
   {
     asio::post(io_context_,
@@ -135,6 +146,7 @@ private:
 private:
   asio::io_context& io_context_;
   tcp::socket socket_;
+  std::string currentRoom;
   chat_message read_msg_;
   chat_message_queue write_msgs_;
 };
@@ -252,6 +264,43 @@ void addMsg(char *user, char *line)
     strcat(msgs[chatSize], line);
 
 }
+void joinChatRoom()
+{
+    //MULTIPLE ROOMS
+    /*
+    It's a network programming example not a chat server.
+
+    The example chat server operates on a socket and doesn't have any
+    logic regarding virtual chat rooms. One chat is bound to a single socket
+    which is blocked for other instances of the chat server.
+
+    If you really want to operate multiple chat rooms with this chat server
+    example you can bind individual instances of the chat server to other ports.
+    An other way would be multiplexing the connections on the same socket using
+    select command or other multiplexing commands.
+
+    *********
+    are we then creating multithreading?
+    based off creating multiple sessions or server classes?
+
+    multiple ports or multiplexing
+    *********
+     * */
+
+}
+void register_participant()
+{
+    //how to send nickname or GUID to server
+    //created a "name" variable in chat_participant
+    //need the client to tell the server to asssociate its
+    //i assume the server stores the master list of all partipants
+
+    //dupes
+    //private msgs (edit lines of code in chat_room::deliver)
+    
+    //message has multiple fields
+    //destin for specific chat room
+}
 int main(int argc, char* argv[])
 {
   try
@@ -267,18 +316,15 @@ int main(int argc, char* argv[])
     tcp::resolver resolver(io_context);
     auto endpoints = resolver.resolve(argv[1], argv[2]);
     chat_client c(io_context, endpoints);
-
+    c.changeRoom("Lobby");
     std::thread t([&io_context](){ io_context.run(); });
 
 
 
+ /*
 
 
-    char msgArray[80];
-    char welcome1[]="Welcome to Super Chat";
-    char welcome2[]="Enter user name: ";
-    int row,col;
-    initscr();
+
     getmaxyx(stdscr,row,col);
     mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
     mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
@@ -286,14 +332,20 @@ int main(int argc, char* argv[])
     clearRow((row/2)-3,col);
     clearRow(row/2, col);
 
-    int loop = 1;
+
     int position = 2;
     //showContent(msgs);
     showHeaderFooter(row, col);
     showMemList(row, col);
-
-
+*/
 /*
+//THIS IS THE START OF NICKS LOOP
+    int loop = 1;
+    char msgArray[80];
+    char welcome1[]="Welcome to Super Chat";
+    char welcome2[]="Enter user name: ";
+    int row,col;
+    initscr();
     while (loop == 1)
     {
 
@@ -306,33 +358,79 @@ int main(int argc, char* argv[])
       clearChat(row, col);
       showMemList(row, col);
 
-      //addMsg(nameArray, msgArray);
-      //showContent(msgs);
+      addMsg(nameArray, msgArray);
+      showContent(msgs);
 
-      chat_message msg;
-      msg.body_length(std::strlen(msgArray));
-      std::memcpy(msg.body(), msgArray, msg.body_length());
-      msg.encode_header();
-      c.write(msg);
+      //chat_message msg;
+      //msg.body_length(std::strlen(msgArray));
+      //std::memcpy(msg.body(), msgArray, msg.body_length());
+      //msg.encode_header();
+      //c.write(msg);
 
     }
-    c.close();
-    t.join();
+    //c.close();
+    //t.join();
 
 */
+/*
+    WINDOW * mainwin;
+        int ch;
+        if ( (mainwin = initscr()) == NULL ) {
+            fprintf(stderr, "Error initializing ncurses.\n");
+            exit(EXIT_FAILURE);
+        }
+        noecho();
+            keypad(mainwin, TRUE);
+            mvaddstr(5, 10, "Press a key ('q' to quit)...");
+            mvprintw(7, 10, "You pressed: ");
+            refresh();
+            while ( (ch = getch()) != 'q' ) {
+                   deleteln();
+                   mvprintw(7, 10, "You pressed: 0x%x (%s)", ch, intprtkey(ch));
+                   refresh();
+               }
+               delwin(mainwin);
+               endwin();
+               refresh();
+            */
+    //initscr();
 
-
-
-
-
-    char line[chat_message::max_body_length + 1];
+    //THIS IS THE START OF ASIO's LOOP
+        char line[chat_message::max_body_length + 1];
         while (std::cin.getline(line, chat_message::max_body_length + 1))
         {
-          chat_message msg;
-          msg.body_length(std::strlen(line));
-          std::memcpy(msg.body(), line, msg.body_length());
-          msg.encode_header();
-          c.write(msg);
+            string str(line);
+
+          if (str == "/room qa")
+          {
+            c.changeRoom("qa");
+          }
+          else
+          {
+              chat_message msg;
+
+            //c.getRoom()
+              //line
+              //char[strlen(line)+strlen(c.getRoom())];
+
+              string concat(line + c.getRoom());
+              int n = concat.length();
+              char char_array[n + 1];
+              strcpy(char_array, concat.c_str());
+
+
+
+              msg.body_length(strlen(char_array));
+
+              //memcpy roomName the message is going to
+              //read commands here
+              //string finalMsg = line + c.getRoom();
+              //nt size = sizeof(c.getRoom());
+              //std::memcpy(msg.body(), c.getRoom(), strlen(c.getRoom()));
+              std::memcpy(msg.body(), char_array, msg.body_length());
+              msg.encode_header();
+              c.write(msg);
+          }
         }
 
         c.close();
@@ -342,7 +440,7 @@ int main(int argc, char* argv[])
       {
         std::cerr << "Exception: " << e.what() << "\n";
       }
-     endwin();
+    endwin();
       return 0;
     }
 
