@@ -1,0 +1,68 @@
+                     //ASSIGNMENTS
+                     //Nick (WRITING/READING) - Filtering, Commands, GUI
+                     //Alan (WRITING/READING) - ChangeNickname,Account name dupes,Reprompt the user on a found dupe
+                     //Sunil (WRITING/READING) - Connect/Disconnect
+                     //Benjamin (WRITING/READING) Ignore, PrivateMessage
+                     //Ricardo (WRITING/READING) CreateRoom, DeleteRoom
+
+
+                      //**EXAMPLE FORMAT FOR MESSAGES
+                      //Room;Delete;RoomName
+                      //Room;Create;RoomName (check for dupes)
+                      //Rename;Nick;Bob
+                      //DeleteRoom;RoomABC
+                      //ClientConnected;Nick
+                      //ChatMsg;Gaming;Nick;Hello everyone
+                      //ClientConnected;Bob
+                      //ChatMsg;Lobby;Bob; Hello from Bob
+                      //Ignore;Bob;Nick
+                      //PrivateMessage;Bob;4;Here is the message
+                      //PrivateReadInt;Nick;4
+                      //ClientDisconnected;Bob
+
+
+                      //**EXAMPLE CODE FOR SENDING YOUR MESSAGES TO THE SERVER (WRITING)
+                      /*
+                       * WRITING *
+                       * this needs to be located in a local method (outside chat_client class)
+                       * OR it needs to be in chat_client class
+                       * most likely in a custom function
+                      chat_message msg;
+                      string concat(c.getRoom() + ";" + lenStr + ";" + c.getNick() + ": " + str);
+                      int n = concat.length();
+                      char char_array[n + 1];
+                      strcpy(char_array, concat.c_str());
+                      msg.body_length(strlen(char_array));
+                      std::memcpy(msg.body(), char_array, msg.body_length());
+                      msg.encode_header();
+                      c.write(msg);
+                      */
+
+
+                      //**PSEUDO CODE USED FOR SPLITTING AND CHECKING DUPES, ETC
+                      //string split on msg (ClientConnected;Nick)
+                      //string split1 = ClientConnected
+                      //string split2 = Nick
+                      //if (split1 = ClientConnected && getNick() == split2)
+                      //{
+                              //function here to change nickname
+                               //DUPE HERE
+
+                      //}
+                      //was not a dupe
+                      //else
+                      //{
+                              //if (split1 = ClientConnected)
+                              //{
+                                //ADD USER to memberlist
+                                //update variable vector inside chat_client
+                                //addToMemberList(nickname);
+                              //will need to add GUI memberlist in main method
+                              //}
+                              //else if (split1 = ClientDisconnected
+                               //{
+                              //REMOVE USER to memberlist
+                              //update variable vector inside chat_client
+                                    //remoteFromMemberList(nickname);
+                              //will need to add GUI memberlist in main method
+                               //}
