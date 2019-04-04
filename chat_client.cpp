@@ -189,6 +189,106 @@ private:
                   //string str(read_msg_.body());
 
                       mvprintw(row,1,"%s",char_array);
+
+                      //pare char_array and send the information to other functions
+                      //System;Nick;Connected to the server
+
+
+
+                      //Room;Delete;RoomName
+                      //Room;Create;RoomName (check for dupes)
+                      //Rename;Nick;Bob
+                      //DeleteRoom;RoomABC
+                      //ClientConnected;Nick
+                      //Msg;Gaming;Nick;Hello everyone
+                      //ClientConnected;Bob
+                      //Msg;Lobby;Bob; Hello from Bob
+                      //Ignore;Bob;Nick
+                      //PrivateMessage;Bob;4;Here is the message
+                      //PrivateReadInt;Nick;4
+                      //ClientDisconnected;Bob
+
+                      //Nick (WRITING/READING) - Filtering
+                       //Alan (WRITING/READING) - ChangeNickname,Account name dupes,Reprompt the user on a found dupe
+                      //Sunil (WRITING/READING) - Connect/Disconnect
+                      //Benjamin (WRITING/READING) Ignore, PrivateMessage
+                      //Ricardo (WRITING/READING) CreateRoom, DeleteRoom
+
+
+                      /*
+                       * WRITING *
+                       * this needs to be located in a local method (outside chat_client class)
+                       * OR it needs to be in chat_client class
+                       * most likely in a custom function
+                      chat_message msg;
+                      string concat(c.getRoom() + ";" + lenStr + ";" + c.getNick() + ": " + str);
+                      int n = concat.length();
+                      char char_array[n + 1];
+                      strcpy(char_array, concat.c_str());
+                      msg.body_length(strlen(char_array));
+                      std::memcpy(msg.body(), char_array, msg.body_length());
+                      msg.encode_header();
+                      c.write(msg);
+                      */
+
+
+
+
+
+
+
+
+
+
+
+
+                      //string split on msg (ClientConnected;Nick)
+                      //string split1 = ClientConnected
+                      //string split2 = Nick
+                      //if (split1 = ClientConnected && getNick() == split2)
+                      //{
+                              //function here to change nickname
+                               //DUPE HERE
+
+                      //}
+
+                      //was not a dupe
+                      //else
+                      //{
+                              //if (split1 = ClientConnected)
+                              //{
+                                //ADD USER to memberlist
+                                //update variable vector inside chat_client
+                                //addToMemberList(nickname);
+                              //will need to add GUI memberlist in main method
+                              //}
+                              //else if (split1 = ClientDisconnected
+                               //{
+                              //REMOVE USER to memberlist
+                              //update variable vector inside chat_client
+                                    //remoteFromMemberList(nickname);
+                              //will need to add GUI memberlist in main method
+                               //}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
                       for (int i = n+1; i <= maxcol; i++)
                       {
@@ -444,6 +544,22 @@ int main(int argc, char* argv[])
 {
   try
   {
+//clientConnected(); send a msg to server that a new person connected
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         if (argc != 3)
         {
@@ -571,6 +687,7 @@ int main(int argc, char* argv[])
 
     auto endpoints = resolver.resolve(argv[1], argv[2]);
     chat_client c(io_context, endpoints);
+    //c.SunilFunction();
     //c.changeRoom("Lobby");
     //c.getScreen();
     c.changeNick(nameStr);
@@ -583,6 +700,7 @@ int main(int argc, char* argv[])
 
 
         c.prompt();
+        //main loop starts here
         while (loop == 1)
         {
             char str[80];
@@ -604,7 +722,7 @@ int main(int argc, char* argv[])
 
 
 
-
+          //where the commands start
           if (line.find("/room ") == 0)
           {
             string roomName = line.substr(0, line.find(" "));
@@ -613,6 +731,22 @@ int main(int argc, char* argv[])
           else if (line.find("/help ") == 0)
           {
             c.help();
+          }
+          else if (line.find("/ignore ") == 0)
+          {
+            //c.BenjaminMethod();
+          }
+          else if (line.find("/private ") == 0)
+          {
+            //c.BenjaminMethod();
+          }
+          else if (line.find("/create ") == 0)
+          {
+            //c.RicardoMethod()
+          }
+          else if (line.find("/delete ") == 0)
+          {
+            //c.RicardoMethod()
           }
           else
           {
@@ -645,6 +779,8 @@ int main(int argc, char* argv[])
         std::cerr << "Exception: " << e.what() << "\n";
       }
     endwin();
+
+    //if user typed /quit then send disconnect msg to server
       return 0;
     }
 
