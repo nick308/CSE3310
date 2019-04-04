@@ -1,11 +1,7 @@
 /*
-make -lncurses
+make
 ./chat_server 9000
 ./chat_client 127.0.0.1 9000
-g++ seproject.cpp -lncurses
-g++ chat_client.cpp -lncurses
-./a.out
-ctl+e
 */
 
 #include <cstdlib>
@@ -18,20 +14,16 @@ ctl+e
 #include <string.h>
 #include <string>
 #include <math.h>
+
 using asio::ip::tcp;
 using namespace std;
+
 typedef std::deque<chat_message> chat_message_queue;
-char msgs[50][100];
-char help[50][100];
-int chatSize = 14;
-char nameArray[80];
-char roomName[80];
-
-
 
 class chat_client
 {
 public:
+  //initilize new chat_client class and call do_connect()
   chat_client(asio::io_context& io_context,
       const tcp::resolver::results_type& endpoints)
     : io_context_(io_context),
@@ -39,59 +31,39 @@ public:
   {
     do_connect(endpoints);
   }
-  void initHelpMenu()
-  {
-      char help[50][100];
-      strcpy(help[9],"**HELP MENU**");
-      strcpy(help[10],"/join <string> - join an existing chat room");
-      strcpy(help[11],"/leave - switch to lobby");
-      strcpy(help[12],"/create <string> - creates a new chat room");
-      strcpy(help[13],"/private <int> <string> - sends a private message");
-      strcpy(help[14],"/rename <string> - changes your account name");
-
-  }
-  void help()
-  {
-      clearChat();
-  }
+  //draws the prompt at the bottom left. ex - "Nick: "
   void prompt()
   {
+          // converting string to char[] then printing to screen
       string concat(getNick());
       int n = concat.length();
       char char_array[n + 1];
       strcpy(char_array, concat.c_str());
-      //int len = strlen(char_array);
-      //memcpy roomName the message is going to
-      //read commands here
-      //string finalMsg = line + c.getRoom();
-      //nt size = sizeof(c.getRoom());
-      //std::memcpy(msg.body(), c.getRoom(), strlen(c.getRoom()));
-      //std::memcpy(msg.body(), char_array, len);
-
-
       clearRow(maxrow-1);
       mvprintw(maxrow-1,1," %s: ",char_array);
-    //mvprintw(maxrow-1,1,"Nick: ");
-
-
   }
+  //set local chat_client variable to new room name
   void changeRoom(string roomName)
   {
     currentRoom = roomName;
   }
+  //return local chat_client variable for current room name
   string getRoom()
   {
     return currentRoom;
   }
+  //set local chat_client variable to new account name
   void changeNick(string nickSender)
   {
     nickName.assign(nickSender);
-      //std::memcpy(nickName, nickSender, nickName.length());
   }
+  //return local chat_client variable for account name
   string getNick()
   {
     return nickName;
   }
+  //asio chat example for sending message to server
+  //calls do_write()   (private function of chat_client)
   void write(const chat_message& msg)
   {
     asio::post(io_context_,
@@ -105,19 +77,21 @@ public:
           }
         });
   }
-
+   //asio chat example for closing chat client connection to server
   void close()
   {
     asio::post(io_context_, [this]() { socket_.close(); });
   }
+  //get screen size and initilize counters
   void getScreen()
   {
+          //get current screen size
       getmaxyx(stdscr,maxrow,maxcol);
+          //these two variables are starting points for where to print chat messages. (typically top left corner)
       row = 2;
       col = 1;
-      //row = ceil(maxrow/2);
-      //col = ceil(maxcol/2);
   }
+  //clear ncruses gui at a certain row
   void clearRow(int row)
   {
       for (int i = 0;i<maxcol;i++)
@@ -125,24 +99,13 @@ public:
           mvprintw(row, i, " ");
       }
   }
-  void clearChat()
-  {
-      int y, x;            // to store where you are
-      getyx(stdscr, y, x); // save current pos
-      for (int i = 3;i<=maxrow-3;i++)
-      {
-
-          move(i, 0);          // move to begining of line
-          clrtoeol();          // clear line
-
-      }
-      move(y, x);          // move back to where you were
-      do_read_header();
-  }
 private:
+  //asio chat example that initlizes the connection to the server
   void do_connect(const tcp::resolver::results_type& endpoints)
   {
+         //on connect, set user default room to Lobby
     changeRoom("Lobby");
+        //get screen size and initialize counters
     getScreen();
 
     asio::async_connect(socket_, endpoints,
@@ -154,7 +117,7 @@ private:
           }
         });
   }
-
+  //asio chat example that reads the header and then calls do_read_body()
   void do_read_header()
   {
     asio::async_read(socket_,
@@ -171,179 +134,33 @@ private:
           }
         });
   }
-
+  //primary method that iterates through all msgs in queue.
+  //Method prints messages and calls functions to process server info for the client
   void do_read_body()
   {
-
       asio::async_read(socket_,
               asio::buffer(read_msg_.body(), read_msg_.body_length()),
               [this](std::error_code ec, std::size_t /*length*/)
               {
                 if (!ec)
                 {
-
+                    //convert single msg to char[]
                     string concat(read_msg_.body());
                     int n = concat.length();
                     char char_array[n + 1];
                     strcpy(char_array, concat.c_str());
-                  //string str(read_msg_.body());
 
-                      mvprintw(row,1,"%s",char_array);
+                    //TODO - parse concat (string) or char_array (char[])
+                    //use standards that we defined
 
-                      //pare char_array and send the information to other functions
-                      //System;Nick;Connected to the server
-
-
-
-                      //Room;Delete;RoomName
-                      //Room;Create;RoomName (check for dupes)
-                      //Rename;Nick;Bob
-                      //DeleteRoom;RoomABC
-                      //ClientConnected;Nick
-                      //Msg;Gaming;Nick;Hello everyone
-                      //ClientConnected;Bob
-                      //Msg;Lobby;Bob; Hello from Bob
-                      //Ignore;Bob;Nick
-                      //PrivateMessage;Bob;4;Here is the message
-                      //PrivateReadInt;Nick;4
-                      //ClientDisconnected;Bob
-
-                      //Nick (WRITING/READING) - Filtering
-                       //Alan (WRITING/READING) - ChangeNickname,Account name dupes,Reprompt the user on a found dupe
-                      //Sunil (WRITING/READING) - Connect/Disconnect
-                      //Benjamin (WRITING/READING) Ignore, PrivateMessage
-                      //Ricardo (WRITING/READING) CreateRoom, DeleteRoom
-
-
-                      /*
-                       * WRITING *
-                       * this needs to be located in a local method (outside chat_client class)
-                       * OR it needs to be in chat_client class
-                       * most likely in a custom function
-                      chat_message msg;
-                      string concat(c.getRoom() + ";" + lenStr + ";" + c.getNick() + ": " + str);
-                      int n = concat.length();
-                      char char_array[n + 1];
-                      strcpy(char_array, concat.c_str());
-                      msg.body_length(strlen(char_array));
-                      std::memcpy(msg.body(), char_array, msg.body_length());
-                      msg.encode_header();
-                      c.write(msg);
-                      */
-
-
-
-
-
-
-
-
-
-
-
-
-                      //string split on msg (ClientConnected;Nick)
-                      //string split1 = ClientConnected
-                      //string split2 = Nick
-                      //if (split1 = ClientConnected && getNick() == split2)
-                      //{
-                              //function here to change nickname
-                               //DUPE HERE
-
-                      //}
-
-                      //was not a dupe
-                      //else
-                      //{
-                              //if (split1 = ClientConnected)
-                              //{
-                                //ADD USER to memberlist
-                                //update variable vector inside chat_client
-                                //addToMemberList(nickname);
-                              //will need to add GUI memberlist in main method
-                              //}
-                              //else if (split1 = ClientDisconnected
-                               //{
-                              //REMOVE USER to memberlist
-                              //update variable vector inside chat_client
-                                    //remoteFromMemberList(nickname);
-                              //will need to add GUI memberlist in main method
-                               //}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-                      for (int i = n+1; i <= maxcol; i++)
-                      {
-                          mvprintw(row,i,"-");
-
-                      }
-
-*/
-
+                    //if it is just a regular chat message, then use this to print to screen
+                    mvprintw(row,1,"%s",char_array);
+                    //increment down to next line
                     row = row + 1;
+                    //redraw the prompt at bottom left (ex- "Nick: ")
                     prompt();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                      /*
-                    int num = str.find(";");
-                    int len = str.length();n);
-                    string roomName = str.substr(0, num);
-                    string message = str.substr(num, len);
-
-                    mvprintw(row,1,"%s",roomName);
-                    if (getRoom() == roomName)
-                    {
-                        clearRow(row);
-                        mvprintw(row,1,"%s",read_msg_.body());
-                        for (int i = read_msg_.body_length()+1; i <= maxcol; i++)
-                        {
-                            mvprintw(row,i," ");
-                            row = row + 1;
-                        }
-
-                    }
-                    */
-
-
-
-
-                  //move(maxrow, 1);
-                  //maxcol = maxcol + 1;
-
-
-                  do_read_header();
+                    //recursion
+                    do_read_header();
                 }
                 else
                 {
@@ -351,11 +168,9 @@ private:
                 }
               });
         }
-
+  //asio chat example function that handles sending messages to the server via vector
   void do_write()
   {
-
-
     asio::async_write(socket_,
         asio::buffer(write_msgs_.front().data(),write_msgs_.front().length()),[this](std::error_code ec, std::size_t /*length*/)
         {
@@ -374,7 +189,7 @@ private:
         });
 
   }
-
+//private variables for chat_client
 private:
   asio::io_context& io_context_;
   tcp::socket socket_;
@@ -385,404 +200,176 @@ private:
   chat_message read_msg_;
   chat_message_queue write_msgs_;
 };
-
-
-
-void initMsgs()
+//function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
+void showHeaderFooter(int maxrow, int maxcol)
 {
-
-    strcpy(msgs[0],"Mike: C provides constructs that map efficiently");
-    strcpy(msgs[1],"Tahmid Stubbs: i agree");
-    strcpy(msgs[2],"Aniela Branch: C was originally developed by Dennis Ritchie");
-    strcpy(msgs[3],"Iain Britton: yeah");
-    strcpy(msgs[4],"Iain Britton: A state diagram is a type of diagram used");
-    strcpy(msgs[5],"Iain Britton: computer science and related fields to describe");
-    strcpy(msgs[6],"Tahmid Stubbs: behavior of systems. State diagrams require");
-    strcpy(msgs[7],"Harvir Reyna: the system described is composed of");
-    strcpy(msgs[8],"Aniela Branch: diagrams are used to give an abstract descript");
-    strcpy(msgs[9],"Harvir Reyna: this behavior is analyzed and represented");
-    strcpy(msgs[10],"Rees Wolfe: it can occur in one or more possible sts");
-    strcpy(msgs[11],"Mike: C provides constructs that map efficiently");
-    strcpy(msgs[12],"Tahmid Stubbs: Despite its low-level capabilities, the language");
-    strcpy(msgs[13],"Aniela Branch: C was originally developed by Dennis Ritchie");
-    strcpy(msgs[14],"Iain Britton: yeah");
-
-}
-
-void showHeaderFooter(int row, int col)
-{
-    for (int i = 0;i<col;i++)
+        //clear top info panel (clock, room name, and help info)
+    for (int i = 0;i<maxcol;i++)
     {
         mvprintw(0, i, " ");
     }
-
-
+    //redraw top info panel (clock, room name, and help info)
     mvprintw(0, 0, "9:48PM");
     mvprintw(0, 10, "Lobby");
-    mvprintw(0, col-20, "For help: type /help");
+    mvprintw(0, maxcol-20, "For help: type /help");
 
-
-
-
-    for (int i = 0;i<col;i++)
+   //draw top line
+    for (int i = 0;i<maxcol;i++)
     {
         mvprintw(1, i, "=");
     }
-    for (int i = 0;i<col;i++)
+        //draw bottom line
+    for (int i = 0;i<maxcol;i++)
     {
-        mvprintw(row-3, i, "=");
+        mvprintw(maxrow-3, i, "=");
     }
-}
-void showContent(char content[][100])
-{
-
-    int position = 5;
-    for (int i = chatSize;i>=0;i--)
-    {
-        mvprintw(LINES - position, 0, "                                                               ");
-        //mvprintw(LINES - position, 0, "%s", msgs[i]);
-        mvprintw(LINES - position, 0, "%s", content[i]);
-        position = position + 1;
-    }
-
-}
-void showMemList(int row, int col)
-{
-    mvprintw(row/3, col-13, "Member List");
-    mvprintw((row/3)+1, col-13, "------------");
-    mvprintw((row/3)+2, col-13, "Aniela Branch");
-    mvprintw((row/3)+3, col-13, "Rees Wolfe");
-    mvprintw((row/3)+4, col-13, "Samina Kouma");
-    mvprintw((row/3)+5, col-13, "Harvir Reyna");
-    mvprintw((row/3)+6, col-13, "Iain Britton");
-    mvprintw((row/3)+7, col-13, "Tahmid Stubbs");
-    //mvprintw((row/3)+8, col-13, nameArray);
-    for (int i = (row/3)+1;i<row-3;i++)
-    {
-        mvprintw(i, col-15, "|");
-    }
-
-}
-
-void addMsg(char *user, char *line)
-{
-
-    for (int i = 0;i<50;i++)
-    {
-
-        msgs[i][0] = '\0';
-        strcpy(msgs[i], msgs[i+1]);
-
-    }
-
-    msgs[chatSize][0] = '\0';
-    strcpy(msgs[chatSize], user);
-    strcat(msgs[chatSize], ": ");
-    strcat(msgs[chatSize], line);
-
-}
-void joinChatRoom()
-{
-    //MULTIPLE ROOMS
-    /*
-    It's a network programming example not a chat server.
-
-    The example chat server operates on a socket and doesn't have any
-    logic regarding virtual chat rooms. One chat is bound to a single socket
-    which is blocked for other instances of the chat server.
-
-    If you really want to operate multiple chat rooms with this chat server
-    example you can bind individual instances of the chat server to other ports.
-    An other way would be multiplexing the connections on the same socket using
-    select command or other multiplexing commands.
-
-    *********
-    are we then creating multithreading?
-    based off creating multiple sessions or server classes?
-
-    multiple ports or multiplexing
-    *********
-     * */
-
-}
-void register_participant()
-{
-    //how to send nickname or GUID to server
-    //created a "name" variable in chat_participant
-    //need the client to tell the server to asssociate its
-    //i assume the server stores the master list of all partipants
-
-    //dupes
-    //private msgs (edit lines of code in chat_room::deliver)
-    
-    //message has multiple fields
-    //destin for specific chat room
-}
-std::string getstring()
-{
-    std::string input;
-
-    // let the terminal do the line editing
-    //nocbreak();
-    //echo();
-
-    // this reads from buffer after <ENTER>, not "raw"
-    // so any backspacing etc. has already been taken care of
-    int ch = getch();
-
-    while ( ch != '\n' )
-    {
-        input.push_back( ch );
-        ch = getch();
-    }
-
-    // restore your cbreak / echo settings here
-
-    return input;
 }
 int main(int argc, char* argv[])
 {
-  try
-  {
-//clientConnected(); send a msg to server that a new person connected
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    try
+    {
+        //built in code written in asio example
         if (argc != 3)
         {
-          std::cerr << "Usage: chat_client <host> <port>\n";
-          return 1;
+            std::cerr << "Usage: chat_client <host> <port>\n";
+            return 1;
         }
         asio::io_context io_context;
         tcp::resolver resolver(io_context);
 
+        //ncurses display initializations
+        char welcome1[]="Welcome to Super Chat";
+        char welcome2[]="Enter user name: ";
+        int row,col;
+        int loop = 1;
+        //initlize ncurses window
+        initscr();
+        cbreak();
+        raw();
+        //enable keypad input
+        keypad(stdscr, TRUE);
+        //show user input
+        echo();
+        //get screen size
+        getmaxyx(stdscr,row,col);
+        //print welcome messages to screen
+        mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
+        mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
 
- /*
-    getmaxyx(stdscr,row,col);
-    mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
-    mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
-    getstr(nameArray);
-    clearRow((row/2)-3,col);
-    clearRow(row/2, col);
+        //initilize place to store user's account name
+        char nameArray[10];
+        //read account name from user input. cap at 10 characters
+        getnstr(nameArray,10);
+        //convert to string
+        string nameStr(nameArray);
 
+        //built-in code from asio example
+        auto endpoints = resolver.resolve(argv[1], argv[2]);
+        chat_client c(io_context, endpoints);
+        //Sunil - call your custom function to send a msg to server that a new person connected
 
-    int position = 2;
-    //showContent(msgs);
-    showHeaderFooter(row, col);
-    showMemList(row, col);
+        //set user's name
+        //impliment dupe checking in c.changeNick
+        c.changeNick(nameStr);
 
-    //THIS IS THE START OF NICKS LOOP
-    int loop = 1;
-    char msgArray[80];
-    char welcome1[]="Welcome to Super Chat";
-    char welcome2[]="Enter user name: ";
-    int row,col;
-    initscr();
-    while (loop == 1)
-    {
+        //clear welcome messages away
+        c.clearRow((row/2)-3);
+        c.clearRow(row/2);
 
-      mvprintw(LINES - 2, 0, "%s:                                                                                                ",nameArray);
-      mvprintw(LINES - 2, 0, "%s:  ", nameArray);
-      getstr(msgArray);
-      mvprintw(LINES - 5, 0, "                                                                                                ");
+        //draw top info panel and bottom prompt panel
+        showHeaderFooter(row, col);
 
-      showHeaderFooter(row, col);
-      clearChat(row, col);
-      showMemList(row, col);
+        //built-in code from asio example
+        std::thread t([&io_context](){ io_context.run(); });
 
-      addMsg(nameArray, msgArray);
-      showContent(msgs);
-
-      //chat_message msg;
-      //msg.body_length(std::strlen(msgArray));
-      //std::memcpy(msg.body(), msgArray, msg.body_length());
-      //msg.encode_header();
-      //c.write(msg);
-
-    }
-    c.close();
-    t.join();
-    WINDOW * mainwin;
-        int ch;
-        if ( (mainwin = initscr()) == NULL ) {
-            fprintf(stderr, "Error initializing ncurses.\n");
-            exit(EXIT_FAILURE);
-        }
-        noecho();
-            keypad(mainwin, TRUE);
-            mvaddstr(5, 10, "Press a key ('q' to quit)...");
-            mvprintw(7, 10, "You pressed: ");
-            refresh();
-            while ( (ch = getch()) != 'q' ) {
-                   deleteln();
-                   mvprintw(7, 10, "You pressed: 0x%x (%s)", ch, intprtkey(ch));
-                   refresh();
-               }
-               delwin(mainwin);
-               endwin();
-               refresh();
-            */
-
-        //do you recommend using WINDOW or not.
-        //some functions take a window argument
-
-        //how to control position of ncurses cursor
-
-        //what triggers the server updating the client with new messages
-        //class initialize calls do_connect() and that calls do_read_header()
-
-        //getstr, getchar, getch
-        //man page not helpful
-        //raw, nobreak, echo, nodelay, nocbreak, cbreak
-        // printw(), wprintw(), mvprintw() and mvwprintw()
-
-
-
-    char welcome1[]="Welcome to Super Chat";
-    char welcome2[]="Enter user name: ";
-    int row,col;
-    int loop = 1;
-    //int position = 2;
-    //WINDOW *my_win;
-    initscr();
-    //stdscr = curses.initscr();
-    //stdscr.clear();
-    cbreak();
-    raw();
-    keypad(stdscr, TRUE);
-    echo();
-    //nodelay(stdscr, TRUE);
-    getmaxyx(stdscr,row,col);
-//mvaddstr((row/2)-3,(col-strlen(welcome1))/2,welcome1);
-    mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
-    mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
-    getnstr(nameArray,10);
-    string nameStr(nameArray);
-    /*
-
-    showHeaderFooter(row, col);
-    clearRow((row/2)-3,col);
-    clearRow(row/2, col);
-    showContent(msgs);
-    showMemList(row, col);
-
-*/
-
-
-
-
-
-    auto endpoints = resolver.resolve(argv[1], argv[2]);
-    chat_client c(io_context, endpoints);
-    //c.SunilFunction();
-    //c.changeRoom("Lobby");
-    //c.getScreen();
-    c.changeNick(nameStr);
-    c.clearRow((row/2)-3);
-    c.clearRow(row/2);
-    showHeaderFooter(row, col);
-    std::thread t([&io_context](){ io_context.run(); });
-
-
-
-
+        //draw initial prompt at bottom left
         c.prompt();
+
         //main loop starts here
         while (loop == 1)
         {
             char str[80];
-            //char* str;
-            //string line;
-
-            //c.clearRow(row-1);
-            //string name(c.getNick());
-            //mvprintw(row - 1, 1, "%s:", name);
-
-
+            //redraw prompt at bottom left
             c.prompt();
-
-            //string line = getstring();a
+            //read user input
             getstr(str);
+            //convert to string
             string line(str);
-            //mvprintw(row - 5, 1, "%s", str);
 
+            //COMMANDS
+            //change room
+            if (line.find("/room ") == 0)
+            {
+                string roomName = line.substr(0, line.find(" "));
+                c.changeRoom(roomName);
+            }
+            //display help menu
+            else if (line.find("/help ") == 0)
+            {
 
+            }
+            //ignore other user
+            else if (line.find("/ignore ") == 0)
+            {
 
+            }
+            //send private message
+            else if (line.find("/private ") == 0)
+            {
 
-          //where the commands start
-          if (line.find("/room ") == 0)
-          {
-            string roomName = line.substr(0, line.find(" "));
-            c.changeRoom(roomName);
-          }
-          else if (line.find("/help ") == 0)
-          {
-            c.help();
-          }
-          else if (line.find("/ignore ") == 0)
-          {
-            //c.BenjaminMethod();
-          }
-          else if (line.find("/private ") == 0)
-          {
-            //c.BenjaminMethod();
-          }
-          else if (line.find("/create ") == 0)
-          {
-            //c.RicardoMethod()
-          }
-          else if (line.find("/delete ") == 0)
-          {
-            //c.RicardoMethod()
-          }
-          else
-          {
-              int len = sizeof(str);
-              string lenStr = to_string(len);
-              chat_message msg;
-              string concat(c.getRoom() + ";" + lenStr + ";" + c.getNick() + ": " + str);
-              int n = concat.length();
-              char char_array[n + 1];
-              strcpy(char_array, concat.c_str());
-              msg.body_length(strlen(char_array));
-              //memcpy roomName the message is going to
-              //read commands here
-              //string finalMsg = line + c.getRoom();
-              //nt size = sizeof(c.getRoom());
-              //std::memcpy(msg.body(), c.getRoom(), strlen(c.getRoom()));
-              std::memcpy(msg.body(), char_array, msg.body_length());
-              msg.encode_header();
-              c.write(msg);
+            }
+            //create new chat room
+            else if (line.find("/create ") == 0)
+            {
 
+            }
+            //delete existing chat room
+            else if (line.find("/delete ") == 0)
+            {
 
-          }
+            }
+            //no valid command was found
+            //assume that this is just a regular chat message to current room
+            else
+            {
+                //convert char[] to string
+                int len = sizeof(str);
+                string lenStr = to_string(len);
+
+                //build new chat_message
+                chat_message msg;
+
+                //build string according to format standards
+                //Action;Location;Actor;StringVal
+                //in this case it is ChatMsg;RoomName;Nickname;Message
+                string concat("ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + str);
+
+                //convert string to char[] then send it off to the server
+                int n = concat.length();
+                char char_array[n + 1];
+                strcpy(char_array, concat.c_str());
+                msg.body_length(strlen(char_array));
+                std::memcpy(msg.body(), char_array, msg.body_length());
+                msg.encode_header();
+                c.write(msg);
+            }
         }
 
+        //close chat client and join threads
         c.close();
         t.join();
-      }
-      catch (std::exception& e)
-      {
-        std::cerr << "Exception: " << e.what() << "\n";
-      }
-    endwin();
+        }
+        catch (std::exception& e)
+        {
+                std::cerr << "Exception: " << e.what() << "\n";
+        }
+        //close ncurses window
+        endwin();
 
-    //if user typed /quit then send disconnect msg to server
-      return 0;
-    }
+        //sunil - if user typed /quit then send disconnect msg to server
+        ///sunil - also check for ctl+c using signal handlers
+        return 0;
+}
 
 
 
