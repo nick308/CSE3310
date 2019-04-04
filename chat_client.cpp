@@ -43,9 +43,9 @@ public:
       mvprintw(maxrow-1,1," %s: ",char_array);
   }
   //set local chat_client variable to new room name
-  void changeRoom(string roomName)
+  void changeRoom(string currentRoomSender)
   {
-    currentRoom = roomName;
+    currentRoom.assign(currentRoomSender);
   }
   //return local chat_client variable for current room name
   string getRoom()
@@ -99,6 +99,37 @@ public:
           mvprintw(row, i, " ");
       }
   }
+  //function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
+  void showHeaderFooter()
+  {
+          //clear top info panel (clock, room name, and help info)
+      for (int i = 0;i<maxcol;i++)
+      {
+          mvprintw(0, i, " ");
+      }
+
+      //convert to char[]
+      string str(getRoom());
+      int n = str.length();
+      char room_array[n + 1];
+      strcpy(room_array, str.c_str());
+
+      //redraw top info panel (clock, room name, and help info)
+      mvprintw(0, 0, "9:48PM");
+      mvprintw(0, 10, "%s", room_array);
+      mvprintw(0, maxcol-20, "For help: type /help");
+
+     //draw top line
+      for (int i = 0;i<maxcol;i++)
+      {
+          mvprintw(1, i, "=");
+      }
+          //draw bottom line
+      for (int i = 0;i<maxcol;i++)
+      {
+          mvprintw(maxrow-3, i, "=");
+      }
+  }
 private:
   //asio chat example that initlizes the connection to the server
   void do_connect(const tcp::resolver::results_type& endpoints)
@@ -145,18 +176,28 @@ private:
                 if (!ec)
                 {
                     //convert single msg to char[]
-                    string concat(read_msg_.body());
-                    int n = concat.length();
+                    string str(read_msg_.body());
+                    int n = str.length();
                     char char_array[n + 1];
-                    strcpy(char_array, concat.c_str());
+                    strcpy(char_array, str.c_str());
 
                     //TODO - parse concat (string) or char_array (char[])
                     //use standards that we defined
 
+
+
                     //if it is just a regular chat message, then use this to print to screen
                     mvprintw(row,1,"%s",char_array);
+
+                    //cleanup after the 32bit pointer
+                    for (int i = read_msg_.body_length()+1; i<maxcol;i++)
+                    {
+                        mvprintw(row,i," ");
+                    }
+
                     //increment down to next line
                     row = row + 1;
+
                     //redraw the prompt at bottom left (ex- "Nick: ")
                     prompt();
                     //recursion
@@ -200,30 +241,7 @@ private:
   chat_message read_msg_;
   chat_message_queue write_msgs_;
 };
-//function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
-void showHeaderFooter(int maxrow, int maxcol)
-{
-        //clear top info panel (clock, room name, and help info)
-    for (int i = 0;i<maxcol;i++)
-    {
-        mvprintw(0, i, " ");
-    }
-    //redraw top info panel (clock, room name, and help info)
-    mvprintw(0, 0, "9:48PM");
-    mvprintw(0, 10, "Lobby");
-    mvprintw(0, maxcol-20, "For help: type /help");
 
-   //draw top line
-    for (int i = 0;i<maxcol;i++)
-    {
-        mvprintw(1, i, "=");
-    }
-        //draw bottom line
-    for (int i = 0;i<maxcol;i++)
-    {
-        mvprintw(maxrow-3, i, "=");
-    }
-}
 int main(int argc, char* argv[])
 {
     try
@@ -277,7 +295,7 @@ int main(int argc, char* argv[])
         c.clearRow(row/2);
 
         //draw top info panel and bottom prompt panel
-        showHeaderFooter(row, col);
+        c.showHeaderFooter();
 
         //built-in code from asio example
         std::thread t([&io_context](){ io_context.run(); });
@@ -288,43 +306,54 @@ int main(int argc, char* argv[])
         //main loop starts here
         while (loop == 1)
         {
-            char str[80];
-            //redraw prompt at bottom left
+            //redraw top and bottom panels and prompt
+            c.showHeaderFooter();
             c.prompt();
+
+
+
+            //initialize input storage
+            char str[100];
+
+
+
             //read user input
             getstr(str);
+
             //convert to string
             string line(str);
 
             //COMMANDS
             //change room
-            if (line.find("/room ") == 0)
+            if (line.find("/room") == 0)
             {
-                string roomName = line.substr(0, line.find(" "));
+                //TODO -  verify that room exists
+                string roomName = line.substr(line.find(" ")+1, line.length());
                 c.changeRoom(roomName);
+
             }
             //display help menu
-            else if (line.find("/help ") == 0)
+            else if (line.find("/help") == 0)
             {
 
             }
             //ignore other user
-            else if (line.find("/ignore ") == 0)
+            else if (line.find("/ignore") == 0)
             {
 
             }
             //send private message
-            else if (line.find("/private ") == 0)
+            else if (line.find("/private") == 0)
             {
 
             }
             //create new chat room
-            else if (line.find("/create ") == 0)
+            else if (line.find("/create") == 0)
             {
 
             }
             //delete existing chat room
-            else if (line.find("/delete ") == 0)
+            else if (line.find("/delete") == 0)
             {
 
             }
@@ -332,9 +361,7 @@ int main(int argc, char* argv[])
             //assume that this is just a regular chat message to current room
             else
             {
-                //convert char[] to string
-                int len = sizeof(str);
-                string lenStr = to_string(len);
+
 
                 //build new chat_message
                 chat_message msg;
@@ -342,7 +369,7 @@ int main(int argc, char* argv[])
                 //build string according to format standards
                 //Action;Location;Actor;StringVal
                 //in this case it is ChatMsg;RoomName;Nickname;Message
-                string concat("ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + str);
+                string concat("ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
 
                 //convert string to char[] then send it off to the server
                 int n = concat.length();
@@ -370,6 +397,5 @@ int main(int argc, char* argv[])
         ///sunil - also check for ctl+c using signal handlers
         return 0;
 }
-
 
 
