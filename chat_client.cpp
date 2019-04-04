@@ -1,13 +1,3 @@
-//
-// chat_client.cpp
-// ~~~~~~~~~~~~~~~
-//
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-
 /*
 make -lncurses
 ./chat_server 9000
@@ -15,6 +5,7 @@ make -lncurses
 g++ seproject.cpp -lncurses
 g++ chat_client.cpp -lncurses
 ./a.out
+ctl+e
 */
 
 #include <cstdlib>
@@ -23,15 +14,19 @@ g++ chat_client.cpp -lncurses
 #include <thread>
 #include "asio.hpp"
 #include "chat_message.hpp"
-
 #include <ncurses.h>
 #include <string.h>
-
 #include <string>
-
+#include <math.h>
 using asio::ip::tcp;
 using namespace std;
 typedef std::deque<chat_message> chat_message_queue;
+char msgs[50][100];
+char help[50][100];
+int chatSize = 14;
+char nameArray[80];
+char roomName[80];
+
 
 
 class chat_client
@@ -44,15 +39,58 @@ public:
   {
     do_connect(endpoints);
   }
-  void changeRoom(std::string roomName)
+  void initHelpMenu()
+  {
+      char help[50][100];
+      strcpy(help[9],"**HELP MENU**");
+      strcpy(help[10],"/join <string> - join an existing chat room");
+      strcpy(help[11],"/leave - switch to lobby");
+      strcpy(help[12],"/create <string> - creates a new chat room");
+      strcpy(help[13],"/private <int> <string> - sends a private message");
+      strcpy(help[14],"/rename <string> - changes your account name");
+
+  }
+  void help()
+  {
+      clearChat();
+  }
+  void prompt()
+  {
+      string concat(getNick());
+      int n = concat.length();
+      char char_array[n + 1];
+      strcpy(char_array, concat.c_str());
+      //int len = strlen(char_array);
+      //memcpy roomName the message is going to
+      //read commands here
+      //string finalMsg = line + c.getRoom();
+      //nt size = sizeof(c.getRoom());
+      //std::memcpy(msg.body(), c.getRoom(), strlen(c.getRoom()));
+      //std::memcpy(msg.body(), char_array, len);
+
+
+      clearRow(maxrow-1);
+      mvprintw(maxrow-1,1," %s: ",char_array);
+    //mvprintw(maxrow-1,1,"Nick: ");
+
+
+  }
+  void changeRoom(string roomName)
   {
     currentRoom = roomName;
-
   }
   string getRoom()
   {
     return currentRoom;
-
+  }
+  void changeNick(string nickSender)
+  {
+    nickName.assign(nickSender);
+      //std::memcpy(nickName, nickSender, nickName.length());
+  }
+  string getNick()
+  {
+    return nickName;
   }
   void write(const chat_message& msg)
   {
@@ -72,10 +110,41 @@ public:
   {
     asio::post(io_context_, [this]() { socket_.close(); });
   }
+  void getScreen()
+  {
+      getmaxyx(stdscr,maxrow,maxcol);
+      row = 2;
+      col = 1;
+      //row = ceil(maxrow/2);
+      //col = ceil(maxcol/2);
+  }
+  void clearRow(int row)
+  {
+      for (int i = 0;i<maxcol;i++)
+      {
+          mvprintw(row, i, " ");
+      }
+  }
+  void clearChat()
+  {
+      int y, x;            // to store where you are
+      getyx(stdscr, y, x); // save current pos
+      for (int i = 3;i<=maxrow-3;i++)
+      {
 
+          move(i, 0);          // move to begining of line
+          clrtoeol();          // clear line
+
+      }
+      move(y, x);          // move back to where you were
+      do_read_header();
+  }
 private:
   void do_connect(const tcp::resolver::results_type& endpoints)
   {
+    changeRoom("Lobby");
+    getScreen();
+
     asio::async_connect(socket_, endpoints,
         [this](std::error_code ec, tcp::endpoint)
         {
@@ -102,16 +171,78 @@ private:
           }
         });
   }
+
   void do_read_body()
   {
+
       asio::async_read(socket_,
               asio::buffer(read_msg_.body(), read_msg_.body_length()),
               [this](std::error_code ec, std::size_t /*length*/)
               {
                 if (!ec)
                 {
-                  std::cout.write(read_msg_.body(), read_msg_.body_length());
-                  std::cout << "\n";
+
+                    string concat(read_msg_.body());
+                    int n = concat.length();
+                    char char_array[n + 1];
+                    strcpy(char_array, concat.c_str());
+                  //string str(read_msg_.body());
+
+                      mvprintw(row,1,"%s",char_array);
+/*
+                      for (int i = n+1; i <= maxcol; i++)
+                      {
+                          mvprintw(row,i,"-");
+
+                      }
+
+*/
+
+                    row = row + 1;
+                    prompt();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      /*
+                    int num = str.find(";");
+                    int len = str.length();n);
+                    string roomName = str.substr(0, num);
+                    string message = str.substr(num, len);
+
+                    mvprintw(row,1,"%s",roomName);
+                    if (getRoom() == roomName)
+                    {
+                        clearRow(row);
+                        mvprintw(row,1,"%s",read_msg_.body());
+                        for (int i = read_msg_.body_length()+1; i <= maxcol; i++)
+                        {
+                            mvprintw(row,i," ");
+                            row = row + 1;
+                        }
+
+                    }
+                    */
+
+
+
+
+                  //move(maxrow, 1);
+                  //maxcol = maxcol + 1;
+
+
                   do_read_header();
                 }
                 else
@@ -123,10 +254,10 @@ private:
 
   void do_write()
   {
+
+
     asio::async_write(socket_,
-        asio::buffer(write_msgs_.front().data(),
-          write_msgs_.front().length()),
-        [this](std::error_code ec, std::size_t /*length*/)
+        asio::buffer(write_msgs_.front().data(),write_msgs_.front().length()),[this](std::error_code ec, std::size_t /*length*/)
         {
           if (!ec)
           {
@@ -141,18 +272,22 @@ private:
             socket_.close();
           }
         });
+
   }
 
 private:
   asio::io_context& io_context_;
   tcp::socket socket_;
-  std::string currentRoom;
+  string currentRoom;
+  string nickName;
+  int maxrow,maxcol;
+  int row,col;
   chat_message read_msg_;
   chat_message_queue write_msgs_;
 };
-char msgs[50][100];
-int chatSize = 14;
-char nameArray[80];
+
+
+
 void initMsgs()
 {
 
@@ -173,13 +308,7 @@ void initMsgs()
     strcpy(msgs[14],"Iain Britton: yeah");
 
 }
-void clearRow(int row, int maxcol)
-{
-    for (int i = 0;i<maxcol;i++)
-    {
-        mvprintw(row, i, " ");
-    }
-}
+
 void showHeaderFooter(int row, int col)
 {
     for (int i = 0;i<col;i++)
@@ -234,19 +363,7 @@ void showMemList(int row, int col)
     }
 
 }
-void clearChat(int maxrow, int maxcol)
-{
-    //int position = 5;
-    for (int i = 2;i<maxrow-4;i++)
-    {
-        for (int j = 0;j<maxcol-20;j++)
-        {
-            mvprintw(i, j, " ");
-        }
-        //mvprintw(LINES - position, 0, "HELP  MENU");
-        //position = position + 1;
-    }
-}
+
 void addMsg(char *user, char *line)
 {
 
@@ -301,30 +418,43 @@ void register_participant()
     //message has multiple fields
     //destin for specific chat room
 }
+std::string getstring()
+{
+    std::string input;
+
+    // let the terminal do the line editing
+    //nocbreak();
+    //echo();
+
+    // this reads from buffer after <ENTER>, not "raw"
+    // so any backspacing etc. has already been taken care of
+    int ch = getch();
+
+    while ( ch != '\n' )
+    {
+        input.push_back( ch );
+        ch = getch();
+    }
+
+    // restore your cbreak / echo settings here
+
+    return input;
+}
 int main(int argc, char* argv[])
 {
   try
   {
-    if (argc != 3)
-    {
-      std::cerr << "Usage: chat_client <host> <port>\n";
-      return 1;
-    }
 
-    asio::io_context io_context;
-
-    tcp::resolver resolver(io_context);
-    auto endpoints = resolver.resolve(argv[1], argv[2]);
-    chat_client c(io_context, endpoints);
-    c.changeRoom("Lobby");
-    std::thread t([&io_context](){ io_context.run(); });
-
+        if (argc != 3)
+        {
+          std::cerr << "Usage: chat_client <host> <port>\n";
+          return 1;
+        }
+        asio::io_context io_context;
+        tcp::resolver resolver(io_context);
 
 
  /*
-
-
-
     getmaxyx(stdscr,row,col);
     mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
     mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
@@ -337,9 +467,8 @@ int main(int argc, char* argv[])
     //showContent(msgs);
     showHeaderFooter(row, col);
     showMemList(row, col);
-*/
-/*
-//THIS IS THE START OF NICKS LOOP
+
+    //THIS IS THE START OF NICKS LOOP
     int loop = 1;
     char msgArray[80];
     char welcome1[]="Welcome to Super Chat";
@@ -368,11 +497,8 @@ int main(int argc, char* argv[])
       //c.write(msg);
 
     }
-    //c.close();
-    //t.join();
-
-*/
-/*
+    c.close();
+    t.join();
     WINDOW * mainwin;
         int ch;
         if ( (mainwin = initscr()) == NULL ) {
@@ -393,35 +519,111 @@ int main(int argc, char* argv[])
                endwin();
                refresh();
             */
-    //initscr();
 
-    //THIS IS THE START OF ASIO's LOOP
-        char line[chat_message::max_body_length + 1];
-        while (std::cin.getline(line, chat_message::max_body_length + 1))
+        //do you recommend using WINDOW or not.
+        //some functions take a window argument
+
+        //how to control position of ncurses cursor
+
+        //what triggers the server updating the client with new messages
+        //class initialize calls do_connect() and that calls do_read_header()
+
+        //getstr, getchar, getch
+        //man page not helpful
+        //raw, nobreak, echo, nodelay, nocbreak, cbreak
+        // printw(), wprintw(), mvprintw() and mvwprintw()
+
+
+
+    char welcome1[]="Welcome to Super Chat";
+    char welcome2[]="Enter user name: ";
+    int row,col;
+    int loop = 1;
+    //int position = 2;
+    //WINDOW *my_win;
+    initscr();
+    //stdscr = curses.initscr();
+    //stdscr.clear();
+    cbreak();
+    raw();
+    keypad(stdscr, TRUE);
+    echo();
+    //nodelay(stdscr, TRUE);
+    getmaxyx(stdscr,row,col);
+//mvaddstr((row/2)-3,(col-strlen(welcome1))/2,welcome1);
+    mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
+    mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
+    getnstr(nameArray,10);
+    string nameStr(nameArray);
+    /*
+
+    showHeaderFooter(row, col);
+    clearRow((row/2)-3,col);
+    clearRow(row/2, col);
+    showContent(msgs);
+    showMemList(row, col);
+
+*/
+
+
+
+
+
+    auto endpoints = resolver.resolve(argv[1], argv[2]);
+    chat_client c(io_context, endpoints);
+    //c.changeRoom("Lobby");
+    //c.getScreen();
+    c.changeNick(nameStr);
+    c.clearRow((row/2)-3);
+    c.clearRow(row/2);
+    showHeaderFooter(row, col);
+    std::thread t([&io_context](){ io_context.run(); });
+
+
+
+
+        c.prompt();
+        while (loop == 1)
         {
-            string str(line);
+            char str[80];
+            //char* str;
+            //string line;
 
-          if (str == "/room qa")
+            //c.clearRow(row-1);
+            //string name(c.getNick());
+            //mvprintw(row - 1, 1, "%s:", name);
+
+
+            c.prompt();
+
+            //string line = getstring();a
+            getstr(str);
+            string line(str);
+            //mvprintw(row - 5, 1, "%s", str);
+
+
+
+
+
+          if (line.find("/room ") == 0)
           {
-            c.changeRoom("qa");
+            string roomName = line.substr(0, line.find(" "));
+            c.changeRoom(roomName);
+          }
+          else if (line.find("/help ") == 0)
+          {
+            c.help();
           }
           else
           {
+              int len = sizeof(str);
+              string lenStr = to_string(len);
               chat_message msg;
-
-            //c.getRoom()
-              //line
-              //char[strlen(line)+strlen(c.getRoom())];
-
-              string concat(line + c.getRoom());
+              string concat(c.getRoom() + ";" + lenStr + ";" + c.getNick() + ": " + str);
               int n = concat.length();
               char char_array[n + 1];
               strcpy(char_array, concat.c_str());
-
-
-
               msg.body_length(strlen(char_array));
-
               //memcpy roomName the message is going to
               //read commands here
               //string finalMsg = line + c.getRoom();
@@ -430,6 +632,8 @@ int main(int argc, char* argv[])
               std::memcpy(msg.body(), char_array, msg.body_length());
               msg.encode_header();
               c.write(msg);
+
+
           }
         }
 
