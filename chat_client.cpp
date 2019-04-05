@@ -34,7 +34,10 @@ public:
   //draws the prompt at the bottom left. ex - "Nick: "
   void prompt()
   {
-          // converting string to char[] then printing to screen
+      //refresh X,Y
+      getScreen();
+
+      // converting string to char[] then printing to screen
       string concat(getNick());
       int n = concat.length();
       char char_array[n + 1];
@@ -88,8 +91,7 @@ public:
           //get current screen size
       getmaxyx(stdscr,maxrow,maxcol);
           //these two variables are starting points for where to print chat messages. (typically top left corner)
-      row = 2;
-      col = 1;
+
   }
   //clear ncruses gui at a certain row
   void clearRow(int row)
@@ -105,7 +107,7 @@ public:
       int logLength = sysLog.size();
 
       //loop through all events
-      for (int i = 0; i<logLength;i++)
+      for (int i = logLength-1; i>=0;i--)
       {
 
       //move into local variable
@@ -145,7 +147,10 @@ public:
               }
 
               //increment down to next line
-              row = row + 1;
+              if (row >= 2)
+              {
+                  row = row - 1;
+              }
 
 
 
@@ -160,7 +165,7 @@ public:
   void clearChat()
   {
       //wipes entire chat middle section. leaving the header and footer alone.
-      row = 2;
+      row = maxrow-3;
       col = 1;
       for (int r = 2;r<maxrow-2;r++)
       {
@@ -176,14 +181,20 @@ public:
       if (show == true)
       {
           clearChat();
-          string help[6];
-          help[5] = "**HELP MENU**";
-          help[4] = "/join <string> - join an existing chat room";
-          help[3] = "/leave - switch to lobby";
-          help[2] = "/create <string> - creates a new chat room";
-          help[1] = "/private <int> <string> - sends a private message";
-          help[0] = "/rename <string> - changes your account name";
-          for (int i = 0 ;i<6;i++)
+          int size = 11;
+          string help[size];
+          help[10] = "**HELP MENU**";
+          help[9] = "/members <room> - show members in an existing chat room";
+          help[8] = "/join <room> - join an existing chat room";
+          help[7] = "/leave - switch to lobby";
+          help[6] = "/create <room> - creates a new chat room";
+          help[5] = "/delete <room> - creates a new chat room";
+          help[4] = "/private <int> <message> - sends a private message";
+          help[3] = "/rename <name> - changes your account name";
+          help[2] = "/ignore <user> - ignore another user";
+          help[1] = "/transfer <path> <user> - transfer file to another user";
+          help[0] = "**Enter any key to close menu**";
+          for (int i = 0 ;i<size;i++)
           {
               int n = help[i].length();
               char char_array[n + 1];
@@ -203,7 +214,10 @@ public:
   //function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
   void showHeaderFooter()
   {
-          //clear top info panel (clock, room name, and help info)
+      //refresh X,Y
+      getScreen();
+
+      //clear top info panel (clock, room name, and help info)
       for (int i = 0;i<maxcol;i++)
       {
           mvprintw(0, i, " ");
@@ -397,6 +411,7 @@ int main(int argc, char* argv[])
             c.clearChat();
             c.showHeaderFooter();
             c.readSystemLog();
+            c.showHeaderFooter();
             c.prompt();
 
 
@@ -415,18 +430,35 @@ int main(int argc, char* argv[])
             string line(str);
 
             //COMMANDS
-            //change room
-            if (line.find("/room") == 0)
-            {
-                //TODO -  verify that room exists
-                string roomName = line.substr(line.find(" ")+1, line.length());
-                c.changeRoom(roomName);
-
-            }
             //display help menu
-            else if (line.find("/help") == 0)
+            if (line.find("/help") == 0)
             {
                 c.showHelpMenu(true);
+            }
+            //file transfer
+            else if (line.find("/transfer") == 0)
+            {
+
+            }
+            //rename account name
+            else if (line.find("/rename") == 0)
+            {
+                //TODO -  verify that name does not exist
+                string newName = line.substr(line.find(" ")+1, line.length());
+                c.changeNick(newName);
+            }
+            //join a different existing room
+            else if (line.find("/join") == 0)
+            {
+                //TODO -  verify that room exists
+                string newRoom = line.substr(line.find(" ")+1, line.length());
+                c.changeRoom(newRoom);
+
+            }
+            //leave current room. default lobby
+            else if (line.find("/leave") == 0)
+            {
+                c.changeRoom("Lobby");
             }
             //ignore other user
             else if (line.find("/ignore") == 0)
@@ -445,6 +477,11 @@ int main(int argc, char* argv[])
             }
             //delete existing chat room
             else if (line.find("/delete") == 0)
+            {
+
+            }
+            //display current members in current room
+            else if (line.find("/members") == 0)
             {
 
             }
