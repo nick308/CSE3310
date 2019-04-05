@@ -177,26 +177,66 @@ private:
                 {
                     //convert single msg to char[]
                     string str(read_msg_.body());
-                    int n = str.length();
-                    char char_array[n + 1];
-                    strcpy(char_array, str.c_str());
+
+
+
+                    //RoomDelete;RoomName
+                    //RoomCreate;RoomName (check for dupes)
+                    //Rename;Nick;Bob
+                    //DeleteRoom;RoomABC
+                    //ClientConnected;Nick
+                    //ChatMsg;Gaming;Nick;Hello everyone
+                    //ClientConnected;Bob
+                    //ChatMsg;Lobby;Bob; Hello from Bob
+                    //Ignore;Bob;Nick
+                    //PrivateMessage;Bob;4;Here is the message
+                    //PrivateReadInt;Nick;4
+                    //ClientDisconnected;Bob
+                    //ChatMsg;Gaming;Nick;Hello everyon
+
 
                     //TODO - parse concat (string) or char_array (char[])
                     //use standards that we defined
 
+                    string delimiter = ";";
+                    //get first token
+                    string action = str.substr(0, str.find(delimiter));
+                    //erase first token
+                    str.erase(0, str.find(delimiter)+1);
 
-
-                    //if it is just a regular chat message, then use this to print to screen
-                    mvprintw(row,1,"%s",char_array);
-
-                    //cleanup after the 32bit pointer
-                    for (int i = read_msg_.body_length()+1; i<maxcol;i++)
+                    //see what type of action it is
+                    if (action == "ChatMsg")
                     {
-                        mvprintw(row,i," ");
+                        //get second token
+                        string roomName = str.substr(0, str.find(delimiter));
+                        //erase second token
+                        str.erase(0, str.find(delimiter)+1);
+
+                        //is user in the same room as the msg?
+                        if (getRoom() == roomName)
+                        {
+                            //convert to char[]
+                            int n = str.length();
+                            char char_array[n + 1];
+                            strcpy(char_array, str.c_str());
+
+                            //if it is just a regular chat message, then use this to print to screen
+                            mvprintw(row,1,"%s",char_array);
+
+                            //cleanup UI after the 32bit pointer
+                            for (int i = n+2; i<maxcol;i++)
+                            {
+                                mvprintw(row,i," ");
+                            }
+
+                            //increment down to next line
+                            row = row + 1;
+                        }
+
+
+
                     }
 
-                    //increment down to next line
-                    row = row + 1;
 
                     //redraw the prompt at bottom left (ex- "Nick: ")
                     prompt();
