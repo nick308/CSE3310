@@ -14,6 +14,9 @@ make
 #include <string.h>
 #include <string>
 #include <math.h>
+#include <chrono>
+#include <time.h>
+
 
 using asio::ip::tcp;
 using namespace std;
@@ -65,6 +68,25 @@ public:
   {
     return nickName;
   }
+  string getTime()
+  {
+      time_t my_time;
+      struct tm * timeinfo;
+      time (&my_time);
+      timeinfo = localtime (&my_time);
+      int hour = timeinfo->tm_hour;
+      int min = timeinfo->tm_min;
+      char str[12];
+      sprintf(str, "%d:%d", hour, min);
+
+
+
+
+
+
+
+    return str;
+  }
   //asio chat example for sending message to server
   //calls do_write()   (private function of chat_client)
   void write(const chat_message& msg)
@@ -113,50 +135,62 @@ public:
       //move into local variable
       string str(sysLog.at(i));
 
+
+
       //chosen format
       string delimiter = ";";
       //get first token
-      string action = str.substr(0, str.find(delimiter));
+      string dateTime = str.substr(0, str.find(delimiter));
       //erase first token
       str.erase(0, str.find(delimiter)+1);
 
-      //see what type of action it is
-      if (action == "ChatMsg")
-      {
-          //get second token
-          string roomName = str.substr(0, str.find(delimiter));
-          //erase second token
-          str.erase(0, str.find(delimiter)+1);
 
-          //is user in the same room as the msg?
-          if (getRoom() == roomName)
-          {
-              //convert to char[]
-              int n = sysLogLength[i] - action.length() - roomName.length();
-              char char_array[n + 1];
-              strcpy(char_array, str.c_str());
-
-              //if it is just a regular chat message, then use this to print to screen
-              mvprintw(row,1,"%s,%i",char_array,n);
-
-
-              //cleanup UI after the 32bit pointer
-              for (int j = n-1; j<maxcol;j++)
-              {
-                  mvprintw(row,j," ");
-              }
-
-              //increment down to next line
-              if (row >= 2)
-              {
-                  row = row - 1;
-              }
+      //get second token
+      string action = str.substr(0, str.find(delimiter));
+      //erase second token
+      str.erase(0, str.find(delimiter)+1);
 
 
 
+        //see what type of action it is
+        if (action == "ChatMsg")
+        {
+            //get second token
+            string roomName = str.substr(0, str.find(delimiter));
+            //erase second token
+            str.erase(0, str.find(delimiter)+1);
+
+            //is user in the same room as the msg?
+            if (getRoom() == roomName)
+            {
+                //convert to char[]
+                int n = sysLogLength[i] - action.length() - roomName.length();
+                char char_array[n + 1];
+                strcpy(char_array, str.c_str());
+
+                int n2 = dateTime.length();
+                char char_array2[n2 + 1];
+                strcpy(char_array2, dateTime.c_str());
 
 
-          }
+
+                //if it is just a regular chat message, then use this to print to screen
+                mvprintw(row,1,"[%s]",char_array2);
+                mvprintw(row,9,"%s",char_array);
+
+
+                //cleanup UI after the 32bit pointer
+                for (int j = n+1; j<maxcol;j++)
+                {
+                    mvprintw(row,j," ");
+                }
+
+                //increment down to next line
+                if (row >= 2)
+                {
+                    row = row - 1;
+                }
+            }
       }
       //redraw the prompt at bottom left (ex- "Nick: ")
       prompt();
@@ -230,7 +264,18 @@ public:
       strcpy(room_array, str.c_str());
 
       //redraw top info panel (clock, room name, and help info)
-      mvprintw(0, 0, "9:48PM");
+      string str2(getTime());
+      int n2 = str2.length();
+      char time_array[n2 + 1];
+      strcpy(time_array, str2.c_str());
+
+
+
+
+
+
+
+      mvprintw(0, 0, "%s", time_array);
       mvprintw(0, 10, "%s", room_array);
       mvprintw(0, maxcol-20, "For help: type /help");
 
@@ -491,13 +536,20 @@ int main(int argc, char* argv[])
             {
 
 
+                    //+ now->tm_min
+
+
+
+
+
                 //build new chat_message
                 chat_message msg;
 
                 //build string according to format standards
                 //Action;Location;Actor;StringVal
                 //in this case it is ChatMsg;RoomName;Nickname;Message
-                string concat("ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
+                //string concat(now->tm_hour + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
+                string concat(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
 
                 //convert string to char[] then send it off to the server
                 int n = concat.length();
