@@ -61,6 +61,15 @@ public:
   //set local chat_client variable to new account name
   void changeNick(string nickSender)
   {
+      //alan - loop through memberlist vector
+      //if match found - error code and reshow screen
+      //if no match found - nickName.assign(nickSender);
+
+
+
+
+
+
     nickName.assign(nickSender);
   }
   //return local chat_client variable for account name
@@ -122,6 +131,15 @@ public:
 
 
   }
+  void prvtMsg(string sender, string digitMsg, string msg)
+  {
+      //create private int variable in chat_client called "digit"
+      //if (c.digit == digitMsg)
+      //if true, then print msg
+
+
+
+  }
   void readSystemLog()
   {
       //get size of current event
@@ -158,6 +176,19 @@ public:
             string roomName = str.substr(0, str.find(delimiter));
             //erase second token
             str.erase(0, str.find(delimiter)+1);
+
+            //RICARDO
+            //int found = 0;
+            //CHatMsg;Lobby;Nick;Msgy
+            //for loop through roomList vector
+            //if roomList[i] == Lobby. if found set found = 1
+
+
+            //if found = 0;
+            //then
+            //pop messages from deleted rooms from vector sysLog
+
+
 
             //is user in the same room as the msg?
             if (getRoom() == roomName)
@@ -211,6 +242,59 @@ public:
 
 
         }
+        else if (action == "Connected")
+        {
+            //add to private vector memberlist inside chat_client
+            //vector.push_back("");
+
+        }
+        else if (action == "Disconnected")
+        {
+            //add to private vector memberlist inside chat_client
+            //loop through the entire memberlist vector
+            //if string == persons who disconnected
+            //then vector.pop()
+
+        }
+        else if (action == "DeleteRoom")
+        {
+            //need to make a room vector
+            //pop for remove
+
+
+
+        }
+        else if (action == "CreateRoom")
+        {
+            //need to make a room vector
+            //push for create
+
+
+        }
+        else if (action == "PrivateMessage")
+        {
+            //string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
+
+
+            //get second token
+            string sender = str.substr(0, str.find(delimiter));
+            //erase second token
+            str.erase(0, str.find(delimiter)+1);
+            //get third token
+            string digit = str.substr(0, str.find(delimiter));
+            //erase third token
+            str.erase(0, str.find(delimiter)+1);
+            //get fourth token
+            string msg = str.substr(0, str.find(delimiter));
+            //erase fourth token
+            str.erase(0, str.find(delimiter)+1);
+
+            prvtMsg(sender, digit, msg);
+
+
+
+
+        }
       //redraw the prompt at bottom left (ex- "Nick: ")
       prompt();
       }
@@ -228,6 +312,7 @@ public:
           }
       }
   }
+
   void showHelpMenu(bool show)
   {
 
@@ -425,6 +510,9 @@ private:
   chat_message_queue write_msgs_;
   vector<string> sysLog;
   vector<int> sysLogLength;
+  //benjamin - private variable INT - code/digit
+  //sunil - private variable string<vector> - memberlist vector
+  //ricardo - private variable string<vector> - roomList vector
 
 };
 
@@ -464,6 +552,7 @@ int main(int argc, char* argv[])
         char nameArray[10];
         //read account name from user input. cap at 10 characters
         getnstr(nameArray,10);
+
         //convert to string
         string nameStr(nameArray);
 
@@ -475,6 +564,8 @@ int main(int argc, char* argv[])
         //set user's name
         //impliment dupe checking in c.changeNick
         c.changeNick(nameStr);
+        string msg(c.getTime() + ";Connected;" + c.getNick());
+        c.sendEvent(msg);
 
         //clear welcome messages away
         c.clearRow((row/2)-3);
@@ -550,6 +641,11 @@ int main(int argc, char* argv[])
                 string newName = line.substr(line.find(" ")+1, line.length());
                 c.changeNick(newName);
             }
+
+            else if (line.find("/listrooms") == 0)
+            {
+                //loop through c.roomList() and print all rooms
+            }
             //join a different existing room
             else if (line.find("/join") == 0)
             {
@@ -568,19 +664,50 @@ int main(int argc, char* argv[])
 
             }
             //send private message
+            else if (line.find("/setprivate") == 0)
+            {
+                //in chat_client - write a get/set methods for that local private variable
+                //put here - c.setDigit(5);
+
+            }
             else if (line.find("/private") == 0)
             {
+                //int CodeNum= 0;
+                string privateMessage =line.substr(line.find(" ")+1, line.length());
+                string MsgToSend =privateMessage.substr(privateMessage.find("")+2,privateMessage.length());
+                string digit = privateMessage.substr(0,1);
+                //stringstream ToInt(digit);
+                //ToInt >> CodeNum;
 
+                //sprintf(str, "%02d:%02d", hour, min)
+
+
+
+                string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
+                c.sendEvent(event);
             }
             //create new chat room
             else if (line.find("/create") == 0)
             {
+                //TODO -  verify that room does not exist
+
+
+                //if c.roomList.length() < 10
+                //then continue
+                //else warn the users theres max limit of 10 chat rooms
+                string newRoom = line.substr(line.find(" ")+1, line.length());
+                string event(c.getTime() + ";CreatedRoom;" + newRoom + ";" + c.getNick());
+                c.sendEvent(event);
 
             }
             //delete existing chat room
             else if (line.find("/delete") == 0)
             {
-
+                //TODO -  verify that room exists
+                //should we check to see if there are any users in the chat room first
+                string newRoom = line.substr(line.find(" ")+1, line.length());
+                string event(c.getTime() + ";DeleteRoom;" + newRoom + ";" + c.getNick());
+                c.sendEvent(event);
             }
             //display current members in current room
             else if (line.find("/members") == 0)
