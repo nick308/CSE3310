@@ -597,22 +597,9 @@ int main(int argc, char* argv[])
             //assume that this is just a regular chat message to current room
             else
             {
+                string event(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
+                c.sendEvent(event);
 
-                //build new chat_message
-                chat_message msg;
-
-                //build string according to format standards
-                //Time;Action;Room;Actor;StringVal
-                string concat(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
-
-                //convert string to char[] then send it off to the server
-                int n = concat.length();
-                char char_array[n + 1];
-                strcpy(char_array, concat.c_str());
-                msg.body_length(strlen(char_array));
-                std::memcpy(msg.body(), char_array, msg.body_length());
-                msg.encode_header();
-                c.write(msg);
             }
         }
 
