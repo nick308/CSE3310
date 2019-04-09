@@ -70,21 +70,14 @@ public:
   }
   string getTime()
   {
-      time_t my_time;
-      struct tm * timeinfo;
-      time (&my_time);
-      timeinfo = localtime (&my_time);
-      int hour = timeinfo->tm_hour;
-      int min = timeinfo->tm_min;
-      char str[12];
-      sprintf(str, "%d:%d", hour, min);
-
-
-
-
-
-
-
+    time_t my_time;
+    struct tm * timeinfo;
+    time (&my_time);
+    timeinfo = localtime (&my_time);
+    int hour = timeinfo->tm_hour;
+    int min = timeinfo->tm_min;
+    char str[12];
+    sprintf(str, "%02d:%02d", hour, min);
     return str;
   }
   //asio chat example for sending message to server
@@ -122,6 +115,12 @@ public:
       {
           mvprintw(row, i, " ");
       }
+  }
+  void transferFile(string filePath, string sender, string recipient)
+  {
+
+
+
   }
   void readSystemLog()
   {
@@ -192,6 +191,26 @@ public:
                 }
             }
       }
+        else if (action == "Transfer")
+        {
+            //string event(getTime() + ";Transfer;" + filePath + ";" + getNick() + ";" + user);
+            //get second token
+            string filePath = str.substr(0, str.find(delimiter));
+            //erase second token
+            str.erase(0, str.find(delimiter)+1);
+            //get third token
+            string sender = str.substr(0, str.find(delimiter));
+            //erase third token
+            str.erase(0, str.find(delimiter)+1);
+            //get fourth token
+            string recipient = str.substr(0, str.find(delimiter));
+            //erase fourth token
+            str.erase(0, str.find(delimiter)+1);
+
+            transferFile(filePath, sender, recipient);
+
+
+        }
       //redraw the prompt at bottom left (ex- "Nick: ")
       prompt();
       }
@@ -215,9 +234,10 @@ public:
       if (show == true)
       {
           clearChat();
-          int size = 11;
+          int size = 12;
           string help[size];
-          help[10] = "**HELP MENU**";
+          help[11] = "**HELP MENU**";
+          help[10] = "/quit - exit SuperChat";
           help[9] = "/members <room> - show members in an existing chat room";
           help[8] = "/join <room> - join an existing chat room";
           help[7] = "/leave - switch to lobby";
@@ -290,6 +310,26 @@ public:
           mvprintw(maxrow-2, i, "=");
       }
   }
+
+  void sendEvent(string event)
+  {
+      //build new chat_message
+      chat_message msg;
+
+      //build string according to format standards
+      //Time;Action;Room;Actor;StringVal
+      //string concat(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
+
+      //convert string to char[] then send it off to the server
+      int n = event.length();
+      char char_array[n + 1];
+      strcpy(char_array, event.c_str());
+      msg.body_length(strlen(char_array));
+      std::memcpy(msg.body(), char_array, msg.body_length());
+      msg.encode_header();
+      write(msg);
+  }
+
 private:
   //asio chat example that initlizes the connection to the server
   void do_connect(const tcp::resolver::results_type& endpoints)
@@ -483,7 +523,25 @@ int main(int argc, char* argv[])
             //file transfer
             else if (line.find("/transfer") == 0)
             {
+                //chosen format
+                string delimiter = " ";
+                //get first token
+                string token1 = line.substr(0, line.find(delimiter));
+                //erase first token
+                line.erase(0, line.find(delimiter)+1);
 
+                //get second token
+                string token2 = line.substr(0, line.find(delimiter));
+                //erase second token
+                line.erase(0, line.find(delimiter)+1);
+
+                //get third token
+                string token3 = line.substr(0, line.find(delimiter));
+                //erase third token
+                line.erase(0, line.find(delimiter)+1);
+
+                string event(c.getTime() + ";Transfer;" + token2 + ";" + c.getNick() + ";" + token3);
+                c.sendEvent(event);
             }
             //rename account name
             else if (line.find("/rename") == 0)
@@ -498,7 +556,6 @@ int main(int argc, char* argv[])
                 //TODO -  verify that room exists
                 string newRoom = line.substr(line.find(" ")+1, line.length());
                 c.changeRoom(newRoom);
-
             }
             //leave current room. default lobby
             else if (line.find("/leave") == 0)
@@ -530,25 +587,22 @@ int main(int argc, char* argv[])
             {
 
             }
+            //display current members in current room
+            else if (line.find("/quit") == 0)
+            {
+                loop = 0;
+
+            }
             //no valid command was found
             //assume that this is just a regular chat message to current room
             else
             {
 
-
-                    //+ now->tm_min
-
-
-
-
-
                 //build new chat_message
                 chat_message msg;
 
                 //build string according to format standards
-                //Action;Location;Actor;StringVal
-                //in this case it is ChatMsg;RoomName;Nickname;Message
-                //string concat(now->tm_hour + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
+                //Time;Action;Room;Actor;StringVal
                 string concat(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
 
                 //convert string to char[] then send it off to the server
