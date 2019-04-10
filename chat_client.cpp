@@ -577,6 +577,12 @@ int main(int argc, char* argv[])
         //main loop starts here
         while (loop == 1)
         {
+          //slow down the loop so that the server can catch up
+          using namespace std::this_thread; //need for sleep_for
+          using namespace std::chrono; //need for nanoseconds
+          sleep_for(nanoseconds(10));
+
+
             //redraw top and bottom panels and prompt
             c.clearChat();
             c.showHeaderFooter();
