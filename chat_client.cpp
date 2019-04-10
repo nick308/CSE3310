@@ -313,11 +313,8 @@ public:
       }
   }
 
-  void showHelpMenu(bool show)
+  string showHelpMenu()
   {
-
-      if (show == true)
-      {
           clearChat();
           int size = 12;
           string help[size];
@@ -344,10 +341,7 @@ public:
           //read user input
           char str[100];
           getstr(str);
-
-      }
-
-
+          return str;
   }
 
   //function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
@@ -528,6 +522,9 @@ int main(int argc, char* argv[])
         }
         asio::io_context io_context;
         tcp::resolver resolver(io_context);
+        auto endpoints = resolver.resolve(argv[1], argv[2]);
+        chat_client c(io_context, endpoints);
+        std::thread t([&io_context](){ io_context.run(); });
 
         //ncurses display initializations
         char welcome1[]="Welcome to Super Chat";
@@ -556,10 +553,8 @@ int main(int argc, char* argv[])
         //convert to string
         string nameStr(nameArray);
 
-        //built-in code from asio example
-        auto endpoints = resolver.resolve(argv[1], argv[2]);
-        chat_client c(io_context, endpoints);
-        //Sunil - call your custom function to send a msg to server that a new person connected
+        
+        
 
         //set user's name
         //impliment dupe checking in c.changeNick
@@ -574,8 +569,7 @@ int main(int argc, char* argv[])
         //draw top info panel and bottom prompt panel
         c.showHeaderFooter();
 
-        //built-in code from asio example
-        std::thread t([&io_context](){ io_context.run(); });
+      
 
         //draw initial prompt at bottom left
         c.prompt();
@@ -609,10 +603,10 @@ int main(int argc, char* argv[])
             //display help menu
             if (line.find("/help") == 0)
             {
-                c.showHelpMenu(true);
+                line.assign(c.showHelpMenu());
             }
             //file transfer
-            else if (line.find("/transfer") == 0)
+            if (line.find("/transfer") == 0)
             {
                 //chosen format
                 string delimiter = " ";
@@ -747,5 +741,4 @@ int main(int argc, char* argv[])
         //sunil - also check for ctl+c using signal handlers
         return 0;
 }
-
 
