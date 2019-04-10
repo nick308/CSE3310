@@ -714,10 +714,12 @@ int main(int argc, char* argv[])
             {
 
             }
-            //display current members in current room
+            //quit the app
             else if (line.find("/quit") == 0)
             {
-                loop = 0;
+                string event(c.getTime() + ";Disconnected;" + c.getNick());
+                c.sendEvent(event); //send disconnect msg to server
+                loop = 0; // this makes it quit
 
             }
             //no valid command was found
