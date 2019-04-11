@@ -64,18 +64,20 @@ public:
       //alan - loop through memberlist vector
       //if match found - error code and reshow screen
       //if no match found - nickName.assign(nickSender);
-
-
-
-
-
-
     nickName.assign(nickSender);
   }
   //return local chat_client variable for account name
   string getNick()
   {
     return nickName;
+  }
+  int getTimestamp()
+  {
+    return timeINT;
+  }
+  void setTimestamp(int onSender)
+  {
+    timeINT = onSender;
   }
   string getTime()
   {
@@ -140,8 +142,10 @@ public:
 
 
   }
+  
   void readSystemLog()
   {
+    checkIgnores();
       //get size of current event
       int logLength = sysLog.size();
 
@@ -188,11 +192,31 @@ public:
             //then
             //pop messages from deleted rooms from vector sysLog
 
+            //CHECK FOR IGNORE
+            int ignoreFound = 0;
+            string user = str.substr(0, str.find(":"));
+            int len = ignoreList.size();
+            for (int j = 0; j<len;j++)
+            {
+              string userInList(ignoreList.at(j));
+
+
+              if (user == userInList)
+              {
+                //mvprintw(maxrow/2,maxcol/2,"%s",userInList);
+                //mvprintw(maxrow/2,maxcol/2,"user ignored");
+                ignoreFound = 1;
+              }
+              
+            }
 
 
             //is user in the same room as the msg?
-            if (getRoom() == roomName)
+            if (getRoom() == roomName && ignoreFound == 0)
             {
+                 
+
+
                 //convert to char[]
                 int n = sysLogLength[i] - action.length() - roomName.length();
                 char char_array[n + 1];
@@ -205,8 +229,18 @@ public:
 
 
                 //if it is just a regular chat message, then use this to print to screen
-                mvprintw(row,1,"[%s]",char_array2);
-                mvprintw(row,9,"%s",char_array);
+                if (timeINT == 1)
+                {
+                  mvprintw(row,1,"[%s]",char_array2);
+                  mvprintw(row,9,"%s", char_array);
+                }
+                else
+                {
+                  n=n-8;
+                    mvprintw(row,1,"%s", char_array);
+                }
+                
+                
 
 
                 //cleanup UI after the 32bit pointer
@@ -241,6 +275,26 @@ public:
             transferFile(filePath, sender, recipient);
 
 
+        }
+        else if (action == "Ignore")
+        {
+          string sender = str.substr(0, str.find(delimiter));
+          str.erase(0, str.find(delimiter)+1);
+          string offender = str.substr(0, str.find(delimiter));
+          str.erase(0, str.find(delimiter)+1);
+
+          if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
+          {
+
+          }
+          else if (getNick() == sender)
+          {
+            
+            ignoreList.push_back(offender);
+            ignoreListLength.push_back(offender.length());
+
+          }
+          
         }
         else if (action == "Connected")
         {
@@ -299,6 +353,62 @@ public:
       prompt();
       }
   }
+  void checkIgnores()
+  {
+      //get size of current event
+      int logLength = sysLog.size();
+
+      //loop through all events
+      for (int i = logLength-1; i>=0;i--)
+      {
+
+      //move into local variable
+      string str(sysLog.at(i));
+
+
+
+      //chosen format
+      string delimiter = ";";
+      //get first token
+      string dateTime = str.substr(0, str.find(delimiter));
+      //erase first token
+      str.erase(0, str.find(delimiter)+1);
+
+
+      //get second token
+      string action = str.substr(0, str.find(delimiter));
+      //erase second token
+      str.erase(0, str.find(delimiter)+1);
+      if (action == "Ignore")
+        {
+          string sender = str.substr(0, str.find(delimiter));
+          str.erase(0, str.find(delimiter)+1);
+          string offender = str.substr(0, str.find(delimiter));
+          str.erase(0, str.find(delimiter)+1);
+
+          if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
+          {
+
+          }
+          else if (getNick() == sender)
+          {
+            
+            ignoreList.push_back(offender);
+            ignoreListLength.push_back(offender.length());
+
+          }
+          
+        }
+
+
+
+
+
+
+      prompt();
+      }
+
+  }
   void clearChat()
   {
       //wipes entire chat middle section. leaving the header and footer alone.
@@ -316,10 +426,11 @@ public:
   string showHelpMenu()
   {
           clearChat();
-          int size = 12;
+          int size = 13;
           string help[size];
-          help[11] = "**HELP MENU**";
-          help[10] = "/quit - exit SuperChat";
+          help[12] = "**HELP MENU**";
+          help[11] = "/quit - exit SuperChat";
+          help[10] = "/time - turn off timestamps";
           help[9] = "/members <room> - show members in an existing chat room";
           help[8] = "/join <room> - join an existing chat room";
           help[7] = "/leave - switch to lobby";
@@ -408,7 +519,6 @@ public:
       msg.encode_header();
       write(msg);
   }
-
 private:
   //asio chat example that initlizes the connection to the server
   void do_connect(const tcp::resolver::results_type& endpoints)
@@ -500,10 +610,14 @@ private:
   string nickName;
   int maxrow,maxcol;
   int row,col;
+  int timeINT;
   chat_message read_msg_;
   chat_message_queue write_msgs_;
   vector<string> sysLog;
   vector<int> sysLogLength;
+  vector<string> ignoreList;
+  vector<int> ignoreListLength;
+  
   //benjamin - private variable INT - code/digit
   //sunil - private variable string<vector> - memberlist vector
   //ricardo - private variable string<vector> - roomList vector
@@ -580,7 +694,7 @@ int main(int argc, char* argv[])
           //slow down the loop so that the server can catch up
           using namespace std::this_thread; //need for sleep_for
           using namespace std::chrono; //need for nanoseconds
-          sleep_for(nanoseconds(10));
+          sleep_for(nanoseconds(30));
 
 
             //redraw top and bottom panels and prompt
@@ -661,7 +775,19 @@ int main(int argc, char* argv[])
             //ignore other user
             else if (line.find("/ignore") == 0)
             {
+              //chosen format
+                string delimiter = " ";
+                //get first token
+                string token1 = line.substr(0, line.find(delimiter));
+                //erase first token
+                line.erase(0, line.find(delimiter)+1);
 
+                //get second token
+                string token2 = line.substr(0, line.find(delimiter));
+
+              string event(c.getTime() + ";Ignore;" + c.getNick() + ";" + token2);
+              c.sendEvent(event);
+            
             }
             //send private message
             else if (line.find("/setprivate") == 0)
@@ -722,6 +848,20 @@ int main(int argc, char* argv[])
                 loop = 0; // this makes it quit
 
             }
+            //turn off timestamp
+            else if (line.find("/time") == 0)
+            {
+              if (c.getTimestamp() == 0)
+              {
+                  c.setTimestamp(1);
+              }
+              else {  c.setTimestamp(0);}
+            }
+            //bad command
+            else if (line.find("/") == 0)
+            {
+
+            }
             //no valid command was found
             //assume that this is just a regular chat message to current room
             else
@@ -747,4 +887,5 @@ int main(int argc, char* argv[])
         //sunil - also check for ctl+c using signal handlers
         return 0;
 }
+
 
