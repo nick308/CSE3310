@@ -16,6 +16,9 @@ make
 #include <math.h>
 #include <chrono>
 #include <time.h>
+#include <fstream>
+
+
 
 
 using asio::ip::tcp;
@@ -59,13 +62,25 @@ public:
     return currentRoom;
   }
   //set local chat_client variable to new account name
-  void changeNick(string nickSender)
+    bool changeNick(string nickSender)
   {
       //alan - loop through memberlist vector
       //if match found - error code and reshow screen
       //if no match found - nickName.assign(nickSender);
+     
+      int arraySize=memberList.size();
+      for(int i=0;i<arraySize;i++)
+      {
+	      if(nickSender == memberList.at(i))
+	      {
+		    return true;
+	      }
+      }
     nickName.assign(nickSender);
+    //memberList.push_back(nickSender);
+    return false;
   }
+
   //return local chat_client variable for account name
   string getNick()
   {
@@ -127,13 +142,20 @@ public:
           mvprintw(row, i, " ");
       }
   }
-  void transferFile(string filePath, string sender, string recipient)
+  void transferFile(string fileName, string sender, string recipient, string content)
   {
-
+      if (recipient == getNick())
+      {
+        ofstream fs;
+        fs.open("output.txt");
+        fs <<  fileName;
+        fs <<  content;
+        fs.close();
+      }
 
 
   }
-  void prvtMsg(string sender, string digitMsg, string msg)
+  void prvtMsgOLD(string sender, string digitMsg, string msg)
   {
       //create private int variable in chat_client called "digit"
       //if (c.digit == digitMsg)
@@ -142,6 +164,54 @@ public:
 
 
   }
+  void prvtMsg(string sender, string digitMsg, string msg)
+{
+  int n = msg.length();
+                char char_array[n + 1];
+                strcpy(char_array, msg.c_str());
+
+         
+                 
+                 mvprintw(row,1,"%s", char_array);
+               
+                
+                
+
+
+                //cleanup UI after the 32bit pointer
+                for (int j = n+1; j<maxcol;j++)
+                {
+                    mvprintw(row,j," ");
+                }
+
+                //increment down to next line
+                if (row >= 2)
+                {
+                    row = row - 1;
+                }
+    //create private int variable in chat_client called "digit"
+    if (code == digitMsg)
+    {
+      //mvprintw(row,1,"[%s]",msg);
+
+                
+
+    }
+    else
+    {
+      //mvprintw(row,1,"message doesn't exists!");
+
+    }
+
+}
+
+
+  void setDigit(string digitMsg)
+  {
+      code = digitMsg;
+
+  }
+
   
   void readSystemLog()
   {
@@ -198,7 +268,8 @@ public:
             int len = ignoreList.size();
             for (int j = 0; j<len;j++)
             {
-              string userInList(ignoreList.at(j));
+              string userInListTemp(ignoreList.at(j));
+              string userInList = userInListTemp.substr(0,ignoreListLength.at(j));
 
 
               if (user == userInList)
@@ -258,9 +329,9 @@ public:
       }
         else if (action == "Transfer")
         {
-            //string event(getTime() + ";Transfer;" + filePath + ";" + getNick() + ";" + user);
+            //string event(c.getTime() + ";Transfer;" + filepath + ";" + c.getNick() + ";" + user + ";" + content + ";");
             //get second token
-            string filePath = str.substr(0, str.find(delimiter));
+            string fileName = str.substr(0, str.find(delimiter));
             //erase second token
             str.erase(0, str.find(delimiter)+1);
             //get third token
@@ -272,16 +343,22 @@ public:
             //erase fourth token
             str.erase(0, str.find(delimiter)+1);
 
-            transferFile(filePath, sender, recipient);
+            string content = str.substr(0, str.find(delimiter));
+            
+
+            transferFile(fileName, sender, recipient, content);
 
 
         }
         else if (action == "Ignore")
         {
+
+          /*
           string sender = str.substr(0, str.find(delimiter));
           str.erase(0, str.find(delimiter)+1);
           string offender = str.substr(0, str.find(delimiter));
-          str.erase(0, str.find(delimiter)+1);
+          int test = str.find(delimiter);
+          //str.erase(0, str.find(delimiter)+1);
 
           if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
           {
@@ -289,25 +366,45 @@ public:
           }
           else if (getNick() == sender)
           {
-            
             ignoreList.push_back(offender);
-            ignoreListLength.push_back(offender.length());
+            //ignoreListLength.push_back(offender.length());
+            ignoreListLength.push_back(test);
+           
+
+
+            //ignoreList.push_back(offender);
+            //ignoreListLength.push_back(offender.length());
 
           }
           
+          */
         }
         else if (action == "Connected")
         {
             //add to private vector memberlist inside chat_client
             //vector.push_back("");
+            memberList.push_back(getNick());
+
 
         }
         else if (action == "Disconnected")
         {
-            //add to private vector memberlist inside chat_client
-            //loop through the entire memberlist vector
-            //if string == persons who disconnected
-            //then vector.pop()
+          string person = str.substr(0, str.find(delimiter));
+          str.erase(0, str.find(delimiter)+1);
+
+          int len = memberList.size();
+
+            
+            for (int j = 0; j<len;j++)
+            {
+              if (person == memberList.at(j))
+              {
+                  memberList.erase (memberList.begin() + j);
+              }
+            }
+
+
+
 
         }
         else if (action == "DeleteRoom")
@@ -328,22 +425,31 @@ public:
         else if (action == "PrivateMessage")
         {
             //string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
+            //string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
 
 
             //get second token
             string sender = str.substr(0, str.find(delimiter));
-            //erase second token
+            //erase second token//
             str.erase(0, str.find(delimiter)+1);
             //get third token
             string digit = str.substr(0, str.find(delimiter));
             //erase third token
             str.erase(0, str.find(delimiter)+1);
             //get fourth token
-            string msg = str.substr(0, str.find(delimiter));
+            //string msg = str.substr(0, str.find(delimiter));
             //erase fourth token
             str.erase(0, str.find(delimiter)+1);
 
-            prvtMsg(sender, digit, msg);
+            //prvtMsg(sender, digit, msg);
+
+
+            int n = sysLogLength[i] - action.length() - sender.length() - digit.length();
+                char char_array[n + 1];
+                strcpy(char_array, str.c_str());
+            //mvprintw(row,1,"%s", char_array);
+            mvprintw(row,1,"test");
+            row = row -1;
 
 
 
@@ -383,8 +489,12 @@ public:
         {
           string sender = str.substr(0, str.find(delimiter));
           str.erase(0, str.find(delimiter)+1);
+          //int offenderSize = str.find(delimiter);
+          //string offender = str.substr(0, offenderSize);
           string offender = str.substr(0, str.find(delimiter));
-          str.erase(0, str.find(delimiter)+1);
+
+          
+          
 
           if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
           {
@@ -392,10 +502,9 @@ public:
           }
           else if (getNick() == sender)
           {
-            
+            //offenderSize is wrong
             ignoreList.push_back(offender);
             ignoreListLength.push_back(offender.length());
-
           }
           
         }
@@ -422,23 +531,88 @@ public:
           }
       }
   }
+  string showMemberList()
+  {
 
+          clearChat();
+
+            int len = memberList.size();
+            mvprintw(maxrow-(4+len),0, "**MEMBER LIST**");
+            
+            for (int j = 0; j<len;j++)
+            {
+              
+              //string newStr = ignoreList.at(j).substr(0, n);
+              int n = 4;
+              char char_array[n + 1];
+              string str(memberList.at(j));
+              str.erase(n, str.length());
+              strcpy(char_array, str.c_str());
+              int printOnRow = maxrow-(4+j);
+              
+              mvprintw(printOnRow,0, "[%s]", char_array);
+             
+
+              
+            }
+
+
+            
+          prompt();
+          //read user input
+          char str[100];
+          getstr(str);
+          return str;
+  }
+  string showIgnoreList()
+  {
+    checkIgnores();
+          clearChat();
+
+            int len = ignoreList.size();
+            mvprintw(maxrow-(4+len),0, "**IGNORE LIST**");
+            
+            for (int j = 0; j<len;j++)
+            {
+              int n = ignoreListLength.at(j);
+              //string newStr = ignoreList.at(j).substr(0, n);
+              char char_array[n + 1];
+              string str(ignoreList.at(j));
+              str.erase(n, str.length());
+              strcpy(char_array, str.c_str());
+              int printOnRow = maxrow-(4+j);
+              
+              mvprintw(printOnRow,0, "[%s]", char_array);
+             
+
+              
+            }
+
+
+            
+          prompt();
+          //read user input
+          char str[100];
+          getstr(str);
+          return str;
+  }
   string showHelpMenu()
   {
           clearChat();
-          int size = 13;
+          int size = 14;
           string help[size];
-          help[12] = "**HELP MENU**";
-          help[11] = "/quit - exit SuperChat";
-          help[10] = "/time - turn off timestamps";
-          help[9] = "/members <room> - show members in an existing chat room";
-          help[8] = "/join <room> - join an existing chat room";
-          help[7] = "/leave - switch to lobby";
-          help[6] = "/create <room> - creates a new chat room";
-          help[5] = "/delete <room> - creates a new chat room";
-          help[4] = "/private <int> <message> - sends a private message";
-          help[3] = "/rename <name> - changes your account name";
-          help[2] = "/ignore <user> - ignore another user";
+          help[13] = "**HELP MENU**";
+          help[12] = "/quit - exit SuperChat";
+          help[11] = "/time - turn off timestamps";
+          help[10] = "/members <room> - show members in an existing chat room";
+          help[9] = "/join <room> - join an existing chat room";
+          help[8] = "/leave - switch to lobby";
+          help[7] = "/create <room> - creates a new chat room";
+          help[6] = "/delete <room> - creates a new chat room";
+          help[5] = "/private <int> <message> - sends a private message";
+          help[4] = "/rename <name> - changes your account name";
+          help[3] = "/ignore <user> - ignore another user";
+          help[2] = "/ignorelist - show your ignored users";
           help[1] = "/transfer <path> <user> - transfer file to another user";
           help[0] = "**Enter any key to close menu**";
           for (int i = 0 ;i<size;i++)
@@ -611,12 +785,15 @@ private:
   int maxrow,maxcol;
   int row,col;
   int timeINT;
+  string code;
   chat_message read_msg_;
   chat_message_queue write_msgs_;
   vector<string> sysLog;
   vector<int> sysLogLength;
   vector<string> ignoreList;
   vector<int> ignoreListLength;
+  vector<string> memberList;
+  vector<string> memberListLength;
   
   //benjamin - private variable INT - code/digit
   //sunil - private variable string<vector> - memberlist vector
@@ -670,9 +847,61 @@ int main(int argc, char* argv[])
         
         
 
+
+
+
+
+
+
+bool dupe = false;
+  //test case
+        //c.memberList.push_back("nick"); 
+
+        //set user's name
+        //impliment dupe checking in c.changeNick
+        dupe = c.changeNick(nameStr);
+
+	while(dupe)
+        {
+                char copy[]="Name already taken";
+                //clear welcome messages away
+                c.clearRow((row/2)-3);
+		c.clearRow(row/2);
+                mvprintw((row/2)-3,(col-strlen(copy))/2,"%s",copy);
+                mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
+                getnstr(nameArray,10);
+                //convert to string
+                string nameStr(nameArray);
+                dupe = c.changeNick(nameStr);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         //set user's name
         //impliment dupe checking in c.changeNick
         c.changeNick(nameStr);
+        c.setTimestamp(1);
         string msg(c.getTime() + ";Connected;" + c.getNick());
         c.sendEvent(msg);
 
@@ -694,7 +923,7 @@ int main(int argc, char* argv[])
           //slow down the loop so that the server can catch up
           using namespace std::this_thread; //need for sleep_for
           using namespace std::chrono; //need for nanoseconds
-          sleep_for(nanoseconds(30));
+          sleep_for(nanoseconds(10000));
 
 
             //redraw top and bottom panels and prompt
@@ -725,27 +954,51 @@ int main(int argc, char* argv[])
             {
                 line.assign(c.showHelpMenu());
             }
+             //display list of ignored users
+            if (line.find("/ignorelist") == 0)
+            {
+                line.assign(c.showIgnoreList());
+            }
+             //display list of ignored users
+            if (line.find("/memberlist") == 0)
+            {
+                line.assign(c.showMemberList());
+            }
             //file transfer
             if (line.find("/transfer") == 0)
             {
                 //chosen format
                 string delimiter = " ";
                 //get first token
-                string token1 = line.substr(0, line.find(delimiter));
+                string filepath = line.substr(0, line.find(delimiter));
                 //erase first token
                 line.erase(0, line.find(delimiter)+1);
 
                 //get second token
-                string token2 = line.substr(0, line.find(delimiter));
+                string user = line.substr(0, line.find(delimiter));
                 //erase second token
-                line.erase(0, line.find(delimiter)+1);
+                //line.erase(0, line.find(delimiter)+1);
 
                 //get third token
-                string token3 = line.substr(0, line.find(delimiter));
+                //string user = line.substr(0, line.find(delimiter));
                 //erase third token
-                line.erase(0, line.find(delimiter)+1);
+                //line.erase(0, line.find(delimiter)+1);
 
-                string event(c.getTime() + ";Transfer;" + token2 + ";" + c.getNick() + ";" + token3);
+
+                fstream fp;
+                fp.open (filepath);
+                string content;
+                if (fp.is_open())
+                {
+                  while ( getline (fp,line) )
+                  {
+                    content = content + line;
+                  }
+                  fp.close();
+                }
+  
+
+                string event(c.getTime() + ";Transfer;" + filepath + ";" + c.getNick() + ";" + user + ";" + content + ";");
                 c.sendEvent(event);
             }
             //rename account name
@@ -785,23 +1038,32 @@ int main(int argc, char* argv[])
                 //get second token
                 string token2 = line.substr(0, line.find(delimiter));
 
-              string event(c.getTime() + ";Ignore;" + c.getNick() + ";" + token2);
-              c.sendEvent(event);
+                if (line.find(delimiter) > 1)
+                {
+                    string event(c.getTime() + ";Ignore;" + c.getNick() + ";" + token2 + ";");
+                    c.sendEvent(event);
+                }
+
+              
             
             }
+           
             //send private message
             else if (line.find("/setprivate") == 0)
             {
                 //in chat_client - write a get/set methods for that local private variable
                 //put here - c.setDigit(5);
+                string digit2 =line.substr(line.find(" ")+1, line.length());
+                c.setDigit(digit2);
+
 
             }
             else if (line.find("/private") == 0)
             {
                 //int CodeNum= 0;
-                string privateMessage =line.substr(line.find(" ")+1, line.length());
-                string MsgToSend =privateMessage.substr(privateMessage.find("")+2,privateMessage.length());
-                string digit = privateMessage.substr(0,1);
+                //string privateMessage =line.substr(line.find(" ")+1, line.length());
+                //string MsgToSend =privateMessage.substr(privateMessage.find("")+2,privateMessage.length());
+                //string digit = privateMessage.substr(0,1);
                 //stringstream ToInt(digit);
                 //ToInt >> CodeNum;
 
@@ -809,8 +1071,20 @@ int main(int argc, char* argv[])
 
 
 
+                //string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
+                //c.sendEvent(event);
+
+
+                //int CodeNum= 0;
+                string privateMessage =line.substr(line.find(" ")+1, line.length());
+                string MsgToSend =privateMessage.substr(privateMessage.find("")+2,privateMessage.length());
+                string digit = privateMessage.substr(0,1);
+
+                //set private here  c.setDigit()
+
                 string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
                 c.sendEvent(event);
+
             }
             //create new chat room
             else if (line.find("/create") == 0)
@@ -870,6 +1144,8 @@ int main(int argc, char* argv[])
                 c.sendEvent(event);
 
             }
+
+            str[0] = '\0';
         }
 
         //close chat client and join threads
