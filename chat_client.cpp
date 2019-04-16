@@ -23,7 +23,8 @@ make
 
 using asio::ip::tcp;
 using namespace std;
-
+using namespace std::this_thread; //need for sleep_for
+          using namespace std::chrono; //need for nanoseconds
 typedef std::deque<chat_message> chat_message_queue;
 
 class chat_client
@@ -66,18 +67,31 @@ public:
     nickName.assign(nickSender);
   }
   //set local chat_client variable to new account name
-  void changeNick()
+  void loginScreen(int dupe)
   {
+    clearChat();
     getScreen();
     //initilize place to store user's account name
-    char nameArray[10];
-    char welcome1[]="Welcome to Super Chat";
-    char welcome2[]="Enter user name: ";
-    mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
-    mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
-    getnstr(nameArray,10);
+    char nameArray[20] = {0};
+    if (dupe == 0)
+    {
+      char welcome1[]="Welcome to Super Chat";
+      char welcome2[]="Enter user name: ";
+      mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
+      mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
+    }
+    else
+    {
+      char welcome1[]="That name is already taken";
+      char welcome2[]="Enter user name: ";
+      mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
+      mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
+    }
+    
+    getstr(nameArray);
 
     //convert to string
+    //nameArray[0] = '\0';
     string nameStr(nameArray);
     //setNick(nameStr);
 
@@ -85,13 +99,15 @@ public:
 
     
     int found = 0;
-    int arraySize=memberList.size();
+    int lenMembers = memberList.size();
     
-    for(int i=0;i<arraySize;i++)
+    for (int j = 0; j<lenMembers;j++)
     {
-      string memberCompare(memberList.at(i));
+      int n = memberListLength.at(j);
+      string memberCompare(memberList.at(j));
+      memberCompare.erase(n, memberCompare.length());
       if(nameStr == memberCompare)
-      //if(nameStr == "Nick")
+      //if("Bob" == memberCompare)
       {
         found = 1;
         break;
@@ -101,13 +117,21 @@ public:
     if (found == 1)
     {
       //setNick(nameStr);
-      setNick("Fail");
-      //changeNick();
+      //setNick("Fail");
+      sleep_for(nanoseconds(1000000));
+      loginScreen(1);
     }
     else
     {
       setNick(nameStr);
-      //setNick("Sucess");
+      setTimestamp(1);
+      string msg(getTime() + ";Connected;" + getNick() + ";");
+      sendEvent(msg);
+      clearChat();
+      //clearRow((row/2)-3);
+      //clearRow(row/2);
+      showHeaderFooter();
+      prompt();
     }
       
 
@@ -221,8 +245,6 @@ public:
           mvprintw(row, i, " ");
       }
   }
-
-
   void prvtMsg(string sender, string digitMsg, string msg)
 {
   int n = msg.length();
@@ -263,8 +285,6 @@ public:
     }
 
 }
-
-
   void setDigit(string digitMsg)
   {
       code = digitMsg;
@@ -302,7 +322,7 @@ public:
   }
   void readSystemLog()
   {
-    checkIgnores();
+    fillVectors();
       //get size of current event
       int logLength = sysLog.size();
 
@@ -478,6 +498,7 @@ public:
         }
         else if (action == "Connected")
         {
+          /*
             string person = str.substr(0, str.find(delimiter));
             
 
@@ -502,15 +523,16 @@ public:
                 memberList.push_back(person);
                 memberListLength.push_back(personLen);
             }
+            */
             
 
 
         }
         else if (action == "Disconnected")
         {
-          string person = str.substr(0, str.find(delimiter));
-          //str.erase(0, str.find(delimiter)+1);
 
+          /*
+          string person = str.substr(0, str.find(delimiter));
           int len = memberList.size();
 
             
@@ -522,6 +544,7 @@ public:
                   memberListLength.erase (memberListLength.begin() + j);
               }
             }
+            */
 
 
 
@@ -593,7 +616,7 @@ public:
       prompt();
       }
   }
-  void checkIgnores()
+  void fillVectors()
   {
       //get size of current event
       int logLength = sysLog.size();
@@ -602,24 +625,24 @@ public:
       for (int i = logLength-1; i>=0;i--)
       {
 
-      //move into local variable
-      string str(sysLog.at(i));
+        //move into local variable
+        string str(sysLog.at(i));
 
 
 
-      //chosen format
-      string delimiter = ";";
-      //get first token
-      string dateTime = str.substr(0, str.find(delimiter));
-      //erase first token
-      str.erase(0, str.find(delimiter)+1);
+        //chosen format
+        string delimiter = ";";
+        //get first token
+        string dateTime = str.substr(0, str.find(delimiter));
+        //erase first token
+        str.erase(0, str.find(delimiter)+1);
 
 
-      //get second token
-      string action = str.substr(0, str.find(delimiter));
-      //erase second token
-      str.erase(0, str.find(delimiter)+1);
-      if (action == "Ignore")
+        //get second token
+        string action = str.substr(0, str.find(delimiter));
+        //erase second token
+        str.erase(0, str.find(delimiter)+1);
+        if (action == "Ignore")
         {
           string sender = str.substr(0, str.find(delimiter));
           str.erase(0, str.find(delimiter)+1);
@@ -627,8 +650,8 @@ public:
           //string offender = str.substr(0, offenderSize);
           string offender = str.substr(0, str.find(delimiter));
 
-          
-          
+
+
 
           if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
           {
@@ -640,15 +663,51 @@ public:
             ignoreList.push_back(offender);
             ignoreListLength.push_back(offender.length());
           }
-          
+
         }
+        else if (action == "Connected")
+        {
+          string person = str.substr(0, str.find(delimiter));
+            
+
+
+            int len = memberList.size();
+            int found = 0;
+
+            
+            for (int j = 0; j<len;j++)
+            {
+              if (person == memberList.at(j))
+              {
+                 found = 1;
+              }
+            }
 
 
 
+            if (found == 0)
+            {
+                int personLen = person.length();
+                memberList.push_back(person);
+                memberListLength.push_back(personLen);
+            }
+        }
+        else if (action == "Disconnected")
+        {
+          string person = str.substr(0, str.find(delimiter));
+          int len = memberList.size();
 
-
-
-      prompt();
+            
+            for (int j = 0; j<len;j++)
+            {
+              if (person == memberList.at(j))
+              {
+                  memberList.erase (memberList.begin() + j);
+                  memberListLength.erase (memberListLength.begin() + j);
+              }
+            }
+        }
+        prompt();
       }
 
   }
@@ -667,39 +726,34 @@ public:
   }
   string showMemberList()
   {
+    fillVectors();
+    clearChat();
 
-          clearChat();
-
-            int len = memberList.size();
-            mvprintw(maxrow-(4+len),0, "**MEMBER LIST**");
-            
-            for (int j = 0; j<len;j++)
-            {
-              
-              int n = memberListLength.at(j);
-              char char_array[n + 1];
-              string str(memberList.at(j));
-              str.erase(n, str.length());
-              strcpy(char_array, str.c_str());
-              int printOnRow = maxrow-(4+j);
-              
-              mvprintw(printOnRow,0, "[%s]", char_array);
-             
-
-              
-            }
-
-
-            
-          prompt();
-          //read user input
-          char str[100];
-          getstr(str);
-          return str;
+      int len = memberList.size();
+      mvprintw(maxrow-(4+len),0, "**%i member(s) online**", len);
+      
+      for (int j = 0; j<len;j++)
+      {
+        
+        int n = memberListLength.at(j);
+        char char_array[n + 1];
+        string str(memberList.at(j));
+        str.erase(n, str.length());
+        strcpy(char_array, str.c_str());
+        int printOnRow = maxrow-(4+j);
+        
+        mvprintw(printOnRow,0, "[%s]", char_array);
+      }
+    prompt();
+    //read user input
+    char str[100];
+    getstr(str);
+    return str;
   }
+  
   string showIgnoreList()
   {
-    checkIgnores();
+    fillVectors();
           clearChat();
 
             int len = ignoreList.size();
@@ -953,7 +1007,7 @@ int main(int argc, char* argv[])
         //ncurses display initializations
         //char welcome1[]="Welcome to Super Chat";
         //char welcome2[]="Enter user name: ";
-        int row,col;
+        //int row,col;
         int loop = 1;
         //initlize ncurses window
         initscr();
@@ -964,7 +1018,7 @@ int main(int argc, char* argv[])
         //show user input
         echo();
         //get screen size
-        getmaxyx(stdscr,row,col);
+        //getmaxyx(stdscr,row,col);
         //print welcome messages to screen
         //mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
         //mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
@@ -1002,30 +1056,19 @@ int main(int argc, char* argv[])
 
         //set user's name
         //impliment dupe checking in c.changeNick
-        c.changeNick();
-        c.setTimestamp(1);
-        string msg(c.getTime() + ";Connected;" + c.getNick() + ";");
-        c.sendEvent(msg);
-
-        //clear welcome messages away
-        c.clearRow((row/2)-3);
-        c.clearRow(row/2);
-
-        //draw top info panel and bottom prompt panel
-        c.showHeaderFooter();
-
-      
-
-        //draw initial prompt at bottom left
-        c.prompt();
+        c.fillVectors();
+        
+        sleep_for(nanoseconds(1000000));
+        c.loginScreen(0);
+        
 
         //main loop starts here
         while (loop == 1)
         {
+          
           //slow down the loop so that the server can catch up
-          using namespace std::this_thread; //need for sleep_for
-          using namespace std::chrono; //need for nanoseconds
-          sleep_for(nanoseconds(10000));
+          
+          sleep_for(nanoseconds(1000000));
 
 
             //redraw top and bottom panels and prompt
