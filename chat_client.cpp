@@ -134,6 +134,52 @@ public:
           //these two variables are starting points for where to print chat messages. (typically top left corner)
 
   }
+  string debug()
+  {
+    clearChat();
+
+      string delimiter = ";";
+     
+      
+
+      
+    //get size of current event
+    int logLength = sysLog.size();
+
+    //loop through all events
+    for (int i = logLength-1; i>=0;i--)
+    {
+        //move into local variable
+        string str(sysLog.at(i));
+        
+        string dateTime = str.substr(0, str.find(delimiter));
+        str.erase(0, str.find(delimiter)+1);
+
+        int n = sysLogLength.at(i) + 2;
+
+
+
+
+
+
+        //convert to char[]
+      
+        char char_array[n + 1];
+        strcpy(char_array, str.c_str());
+
+        int n2 = dateTime.length();
+        char char_array2[n2 + 1];
+        strcpy(char_array2, dateTime.c_str());
+
+        printMsg(char_array, char_array2, n);
+    }
+
+    prompt();
+          //read user input
+          char str[100];
+          getstr(str);
+          return str;
+  }
   //clear ncruses gui at a certain row
   void clearRow(int row)
   {
@@ -142,19 +188,7 @@ public:
           mvprintw(row, i, " ");
       }
   }
-  void transferFile(string fileName, string sender, string recipient, string content)
-  {
-      if (recipient == getNick())
-      {
-        ofstream fs;
-        fs.open("output.txt");
-        fs <<  fileName;
-        fs <<  content;
-        fs.close();
-      }
 
-
-  }
   void prvtMsgOLD(string sender, string digitMsg, string msg)
   {
       //create private int variable in chat_client called "digit"
@@ -192,7 +226,7 @@ public:
     //create private int variable in chat_client called "digit"
     if (code == digitMsg)
     {
-      //mvprintw(row,1,"[%s]",msg);
+      mvprintw(row,1,"[%s]",msg);
 
                 
 
@@ -212,7 +246,35 @@ public:
 
   }
 
-  
+  void printMsg(char msg[], char dateTime[], int msgSize)
+  {
+    //if it is just a regular chat message, then use this to print to screen
+    if (timeINT == 1)
+    {
+      mvprintw(row,1,"[%s]",dateTime);
+      mvprintw(row,9,"%s", msg);
+    }
+    else
+    {
+      msgSize=msgSize-8;
+        mvprintw(row,1,"%s", msg);
+    }
+    
+    
+
+
+    //cleanup UI after the 32bit pointer
+    for (int j = msgSize+1; j<maxcol;j++)
+    {
+        mvprintw(row,j," ");
+    }
+
+    //increment down to next line
+    if (row >= 2)
+    {
+        row = row - 1;
+    }
+  }
   void readSystemLog()
   {
     checkIgnores();
@@ -297,34 +359,11 @@ public:
                 char char_array2[n2 + 1];
                 strcpy(char_array2, dateTime.c_str());
 
+                printMsg(char_array, char_array2, n);
 
 
-                //if it is just a regular chat message, then use this to print to screen
-                if (timeINT == 1)
-                {
-                  mvprintw(row,1,"[%s]",char_array2);
-                  mvprintw(row,9,"%s", char_array);
-                }
-                else
-                {
-                  n=n-8;
-                    mvprintw(row,1,"%s", char_array);
-                }
+
                 
-                
-
-
-                //cleanup UI after the 32bit pointer
-                for (int j = n+1; j<maxcol;j++)
-                {
-                    mvprintw(row,j," ");
-                }
-
-                //increment down to next line
-                if (row >= 2)
-                {
-                    row = row - 1;
-                }
             }
       }
         else if (action == "Transfer")
@@ -344,9 +383,42 @@ public:
             str.erase(0, str.find(delimiter)+1);
 
             string content = str.substr(0, str.find(delimiter));
+
+            if (sender == getNick())
+            {
+                string msg = "*Sent file to " + recipient;
+              int n = msg.length() + 8;
+              char char_array[n + 1];
+              strcpy(char_array, msg.c_str());
+
+              int n2 = dateTime.length();
+              char char_array2[n2 + 1];
+              strcpy(char_array2, dateTime.c_str());
+
+              printMsg(char_array, char_array2, n);
+            }
             
 
-            transferFile(fileName, sender, recipient, content);
+            if (recipient == getNick())
+            {
+              ofstream fs;
+              fs.open(fileName);
+              fs <<  content;
+              fs.close();
+            
+
+
+              string msg = "*Downloaded file from " + sender;
+              int n = msg.length() + 8;
+              char char_array[n + 1];
+              strcpy(char_array, msg.c_str());
+
+              int n2 = dateTime.length();
+              char char_array2[n2 + 1];
+              strcpy(char_array2, dateTime.c_str());
+
+              printMsg(char_array, char_array2, n);
+            }
 
 
         }
@@ -437,19 +509,33 @@ public:
             //erase third token
             str.erase(0, str.find(delimiter)+1);
             //get fourth token
-            //string msg = str.substr(0, str.find(delimiter));
+            string msg = str.substr(0, str.find(delimiter));
             //erase fourth token
-            str.erase(0, str.find(delimiter)+1);
+            //str.erase(0, str.find(delimiter)+1);
 
             //prvtMsg(sender, digit, msg);
+            if (code == digit)
+            {
+
+              string finalMsg("(" + sender + "): " + msg);
+              int n = msg.length() + sender.length() + 12;
+              char char_array[n + 1];
+              strcpy(char_array, finalMsg.c_str());
+
+              int n2 = dateTime.length();
+              char char_array2[n2 + 1];
+              strcpy(char_array2, dateTime.c_str());
+
+              printMsg(char_array, char_array2, n);
+            }
 
 
-            int n = sysLogLength[i] - action.length() - sender.length() - digit.length();
-                char char_array[n + 1];
-                strcpy(char_array, str.c_str());
-            //mvprintw(row,1,"%s", char_array);
-            mvprintw(row,1,"test");
-            row = row -1;
+            //int n = sysLogLength[i] - action.length() - sender.length() - digit.length();
+                //char char_array[n + 1];
+                //strcpy(char_array, str.c_str());
+            ////mvprintw(row,1,"%s", char_array);
+            //mvprintw(row,1,"test");
+            //row = row -1;
 
 
 
@@ -852,7 +938,7 @@ int main(int argc, char* argv[])
 
 
 
-
+/*
 bool dupe = false;
   //test case
         //c.memberList.push_back("nick"); 
@@ -964,11 +1050,18 @@ bool dupe = false;
             {
                 line.assign(c.showMemberList());
             }
+             //display list of ignored users
+            if (line.find("/debug") == 0)
+            {
+                line.assign(c.debug());
+            }
             //file transfer
             if (line.find("/transfer") == 0)
             {
                 //chosen format
                 string delimiter = " ";
+
+                line.erase(0, line.find(delimiter)+1);
                 //get first token
                 string filepath = line.substr(0, line.find(delimiter));
                 //erase first token
@@ -988,11 +1081,12 @@ bool dupe = false;
                 fstream fp;
                 fp.open (filepath);
                 string content;
+                string fsline;
                 if (fp.is_open())
                 {
-                  while ( getline (fp,line) )
+                  while ( getline (fp,fsline) )
                   {
-                    content = content + line;
+                    content = content + fsline;
                   }
                   fp.close();
                 }
@@ -1082,7 +1176,7 @@ bool dupe = false;
 
                 //set private here  c.setDigit()
 
-                string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
+                string event(c.getTime() + ";PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend + ";");
                 c.sendEvent(event);
 
             }
@@ -1131,6 +1225,7 @@ bool dupe = false;
               }
               else {  c.setTimestamp(0);}
             }
+         
             //bad command
             else if (line.find("/") == 0)
             {
