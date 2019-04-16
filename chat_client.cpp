@@ -61,24 +61,57 @@ public:
   {
     return currentRoom;
   }
-  //set local chat_client variable to new account name
-    bool changeNick(string nickSender)
+  void setNick(string nickSender)
   {
-      //alan - loop through memberlist vector
-      //if match found - error code and reshow screen
-      //if no match found - nickName.assign(nickSender);
-     
-      int arraySize=memberList.size();
-      for(int i=0;i<arraySize;i++)
-      {
-	      if(nickSender == memberList.at(i))
-	      {
-		    return true;
-	      }
-      }
     nickName.assign(nickSender);
-    //memberList.push_back(nickSender);
-    return false;
+  }
+  //set local chat_client variable to new account name
+  void changeNick()
+  {
+    getScreen();
+    //initilize place to store user's account name
+    char nameArray[10];
+    char welcome1[]="Welcome to Super Chat";
+    char welcome2[]="Enter user name: ";
+    mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
+    mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
+    getnstr(nameArray,10);
+
+    //convert to string
+    string nameStr(nameArray);
+    //setNick(nameStr);
+
+
+
+    
+    int found = 0;
+    int arraySize=memberList.size();
+    
+    for(int i=0;i<arraySize;i++)
+    {
+      string memberCompare(memberList.at(i));
+      if(nameStr == memberCompare)
+      //if(nameStr == "Nick")
+      {
+        found = 1;
+        break;
+
+      }
+    }
+    if (found == 1)
+    {
+      //setNick(nameStr);
+      setNick("Fail");
+      //changeNick();
+    }
+    else
+    {
+      setNick(nameStr);
+      //setNick("Sucess");
+    }
+      
+
+
   }
 
   //return local chat_client variable for account name
@@ -189,15 +222,7 @@ public:
       }
   }
 
-  void prvtMsgOLD(string sender, string digitMsg, string msg)
-  {
-      //create private int variable in chat_client called "digit"
-      //if (c.digit == digitMsg)
-      //if true, then print msg
 
-
-
-  }
   void prvtMsg(string sender, string digitMsg, string msg)
 {
   int n = msg.length();
@@ -453,16 +478,38 @@ public:
         }
         else if (action == "Connected")
         {
-            //add to private vector memberlist inside chat_client
-            //vector.push_back("");
-            memberList.push_back(getNick());
+            string person = str.substr(0, str.find(delimiter));
+            
+
+
+            int len = memberList.size();
+            int found = 0;
+
+            
+            for (int j = 0; j<len;j++)
+            {
+              if (person == memberList.at(j))
+              {
+                 found = 1;
+              }
+            }
+
+
+
+            if (found == 0)
+            {
+                int personLen = person.length();
+                memberList.push_back(person);
+                memberListLength.push_back(personLen);
+            }
+            
 
 
         }
         else if (action == "Disconnected")
         {
           string person = str.substr(0, str.find(delimiter));
-          str.erase(0, str.find(delimiter)+1);
+          //str.erase(0, str.find(delimiter)+1);
 
           int len = memberList.size();
 
@@ -472,6 +519,7 @@ public:
               if (person == memberList.at(j))
               {
                   memberList.erase (memberList.begin() + j);
+                  memberListLength.erase (memberListLength.begin() + j);
               }
             }
 
@@ -628,8 +676,7 @@ public:
             for (int j = 0; j<len;j++)
             {
               
-              //string newStr = ignoreList.at(j).substr(0, n);
-              int n = 4;
+              int n = memberListLength.at(j);
               char char_array[n + 1];
               string str(memberList.at(j));
               str.erase(n, str.length());
@@ -879,7 +926,7 @@ private:
   vector<string> ignoreList;
   vector<int> ignoreListLength;
   vector<string> memberList;
-  vector<string> memberListLength;
+  vector<int> memberListLength;
   
   //benjamin - private variable INT - code/digit
   //sunil - private variable string<vector> - memberlist vector
@@ -904,8 +951,8 @@ int main(int argc, char* argv[])
         std::thread t([&io_context](){ io_context.run(); });
 
         //ncurses display initializations
-        char welcome1[]="Welcome to Super Chat";
-        char welcome2[]="Enter user name: ";
+        //char welcome1[]="Welcome to Super Chat";
+        //char welcome2[]="Enter user name: ";
         int row,col;
         int loop = 1;
         //initlize ncurses window
@@ -919,32 +966,18 @@ int main(int argc, char* argv[])
         //get screen size
         getmaxyx(stdscr,row,col);
         //print welcome messages to screen
-        mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
-        mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
-
-        //initilize place to store user's account name
-        char nameArray[10];
-        //read account name from user input. cap at 10 characters
-        getnstr(nameArray,10);
-
-        //convert to string
-        string nameStr(nameArray);
-
-        
-        
-
-
-
+        //mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
+        //mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
 
 
 
 /*
-bool dupe = false;
   //test case
         //c.memberList.push_back("nick"); 
 
         //set user's name
         //impliment dupe checking in c.changeNick
+        bool dupe = false;
         dupe = c.changeNick(nameStr);
 
 	while(dupe)
@@ -960,36 +993,18 @@ bool dupe = false;
                 string nameStr(nameArray);
                 dupe = c.changeNick(nameStr);
         }
-        */
+        
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+*/
 
 
 
 
         //set user's name
         //impliment dupe checking in c.changeNick
-        c.changeNick(nameStr);
+        c.changeNick();
         c.setTimestamp(1);
-        string msg(c.getTime() + ";Connected;" + c.getNick());
+        string msg(c.getTime() + ";Connected;" + c.getNick() + ";");
         c.sendEvent(msg);
 
         //clear welcome messages away
@@ -1101,7 +1116,7 @@ bool dupe = false;
             {
                 //TODO -  verify that name does not exist
                 string newName = line.substr(line.find(" ")+1, line.length());
-                c.changeNick(newName);
+                c.setNick(newName);
             }
 
             else if (line.find("/listrooms") == 0)
@@ -1212,7 +1227,7 @@ bool dupe = false;
             //quit the app
             else if (line.find("/quit") == 0)
             {
-                string event(c.getTime() + ";Disconnected;" + c.getNick());
+                string event(c.getTime() + ";Disconnected;" + c.getNick() + ";");
                 c.sendEvent(event); //send disconnect msg to server
                 loop = 0; // this makes it quit
 
