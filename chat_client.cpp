@@ -960,6 +960,7 @@ bool dupe = false;
                 string nameStr(nameArray);
                 dupe = c.changeNick(nameStr);
         }
+        */
 
 
 
