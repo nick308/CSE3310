@@ -24,7 +24,7 @@ make
 using asio::ip::tcp;
 using namespace std;
 using namespace std::this_thread; //need for sleep_for
-          using namespace std::chrono; //need for nanoseconds
+using namespace std::chrono; //need for nanoseconds
 typedef std::deque<chat_message> chat_message_queue;
 
 class chat_client
@@ -62,11 +62,12 @@ public:
   {
     return currentRoom;
   }
+  //set user's account name
   void setNick(string nickSender)
   {
     nickName.assign(nickSender);
   }
-  //set local chat_client variable to new account name
+  //get name from user. check for dupes
   void loginScreen(int dupe)
   {
     clearChat();
@@ -89,15 +90,7 @@ public:
     }
     
     getstr(nameArray);
-
-    //convert to string
-    //nameArray[0] = '\0';
     string nameStr(nameArray);
-    //setNick(nameStr);
-
-
-
-    
     int found = 0;
     int lenMembers = memberList.size();
     
@@ -107,7 +100,6 @@ public:
       string memberCompare(memberList.at(j));
       memberCompare.erase(n, memberCompare.length());
       if(nameStr == memberCompare)
-      //if("Bob" == memberCompare)
       {
         found = 1;
         break;
@@ -116,8 +108,6 @@ public:
     }
     if (found == 1)
     {
-      //setNick(nameStr);
-      //setNick("Fail");
       sleep_for(nanoseconds(1000000));
       loginScreen(1);
     }
@@ -128,14 +118,9 @@ public:
       string msg(getTime() + ";Connected;" + getNick() + ";");
       sendEvent(msg);
       clearChat();
-      //clearRow((row/2)-3);
-      //clearRow(row/2);
       showHeaderFooter();
       prompt();
     }
-      
-
-
   }
 
   //return local chat_client variable for account name
@@ -186,56 +171,45 @@ public:
   //get screen size and initilize counters
   void getScreen()
   {
-          //get current screen size
       getmaxyx(stdscr,maxrow,maxcol);
-          //these two variables are starting points for where to print chat messages. (typically top left corner)
-
   }
+  //for admin use. display raw event list
   string debug()
   {
     clearChat();
 
-      string delimiter = ";";
-     
-      
+    string delimiter = ";";
 
-      
     //get size of current event
     int logLength = sysLog.size();
 
     //loop through all events
     for (int i = logLength-1; i>=0;i--)
     {
-        //move into local variable
-        string str(sysLog.at(i));
-        
-        string dateTime = str.substr(0, str.find(delimiter));
-        str.erase(0, str.find(delimiter)+1);
-
-        int n = sysLogLength.at(i) + 2;
-
-
-
-
-
-
-        //convert to char[]
+      //move into local variable
+      string str(sysLog.at(i));
       
-        char char_array[n + 1];
-        strcpy(char_array, str.c_str());
+      string dateTime = str.substr(0, str.find(delimiter));
+      str.erase(0, str.find(delimiter)+1);
 
-        int n2 = dateTime.length();
-        char char_array2[n2 + 1];
-        strcpy(char_array2, dateTime.c_str());
+      int n = sysLogLength.at(i) + 2;
 
-        printMsg(char_array, char_array2, n);
+      //convert to char[]
+      char char_array[n + 1];
+      strcpy(char_array, str.c_str());
+
+      int n2 = dateTime.length();
+      char char_array2[n2 + 1];
+      strcpy(char_array2, dateTime.c_str());
+
+      printMsg(char_array, char_array2, n);
     }
 
     prompt();
-          //read user input
-          char str[100];
-          getstr(str);
-          return str;
+    //read user input
+    char str[100];
+    getstr(str);
+    return str;
   }
   //clear ncruses gui at a certain row
   void clearRow(int row)
@@ -246,51 +220,33 @@ public:
       }
   }
   void prvtMsg(string sender, string digitMsg, string msg)
-{
-  int n = msg.length();
-                char char_array[n + 1];
-                strcpy(char_array, msg.c_str());
+  {
+    int n = msg.length();
+    char char_array[n + 1];
+    strcpy(char_array, msg.c_str());
+    mvprintw(row,1,"%s", char_array);
+    //cleanup UI after the 32bit pointer
+    for (int j = n+1; j<maxcol;j++)
+    {
+        mvprintw(row,j," ");
+    }
 
-         
-                 
-                 mvprintw(row,1,"%s", char_array);
-               
-                
-                
-
-
-                //cleanup UI after the 32bit pointer
-                for (int j = n+1; j<maxcol;j++)
-                {
-                    mvprintw(row,j," ");
-                }
-
-                //increment down to next line
-                if (row >= 2)
-                {
-                    row = row - 1;
-                }
-    //create private int variable in chat_client called "digit"
+    //increment down to next line
+    if (row >= 2)
+    {
+        row = row - 1;
+    }
     if (code == digitMsg)
     {
       mvprintw(row,1,"[%s]",msg);
-
-                
-
     }
-    else
-    {
-      //mvprintw(row,1,"message doesn't exists!");
-
-    }
-
-}
+  }
+  //set private msg digit for client
   void setDigit(string digitMsg)
   {
       code = digitMsg;
 
   }
-
   void printMsg(char msg[], char dateTime[], int msgSize)
   {
     //if it is just a regular chat message, then use this to print to screen
@@ -304,10 +260,6 @@ public:
       msgSize=msgSize-8;
         mvprintw(row,1,"%s", msg);
     }
-    
-    
-
-
     //cleanup UI after the 32bit pointer
     for (int j = msgSize+1; j<maxcol;j++)
     {
@@ -322,6 +274,7 @@ public:
   }
   void readSystemLog()
   {
+    //refresh data in ignore/member vectors
     fillVectors();
       //get size of current event
       int logLength = sysLog.size();
@@ -332,8 +285,6 @@ public:
 
       //move into local variable
       string str(sysLog.at(i));
-
-
 
       //chosen format
       string delimiter = ";";
@@ -358,17 +309,6 @@ public:
             //erase second token
             str.erase(0, str.find(delimiter)+1);
 
-            //RICARDO
-            //int found = 0;
-            //CHatMsg;Lobby;Nick;Msgy
-            //for loop through roomList vector
-            //if roomList[i] == Lobby. if found set found = 1
-
-
-            //if found = 0;
-            //then
-            //pop messages from deleted rooms from vector sysLog
-
             //CHECK FOR IGNORE
             int ignoreFound = 0;
             string user = str.substr(0, str.find(":"));
@@ -377,24 +317,14 @@ public:
             {
               string userInListTemp(ignoreList.at(j));
               string userInList = userInListTemp.substr(0,ignoreListLength.at(j));
-
-
               if (user == userInList)
               {
-                //mvprintw(maxrow/2,maxcol/2,"%s",userInList);
-                //mvprintw(maxrow/2,maxcol/2,"user ignored");
                 ignoreFound = 1;
               }
-              
             }
-
-
             //is user in the same room as the msg?
             if (getRoom() == roomName && ignoreFound == 0)
             {
-                 
-
-
                 //convert to char[]
                 int n = sysLogLength[i] - action.length() - roomName.length();
                 char char_array[n + 1];
@@ -405,15 +335,10 @@ public:
                 strcpy(char_array2, dateTime.c_str());
 
                 printMsg(char_array, char_array2, n);
-
-
-
-                
             }
       }
         else if (action == "Transfer")
         {
-            //string event(c.getTime() + ";Transfer;" + filepath + ";" + c.getNick() + ";" + user + ";" + content + ";");
             //get second token
             string fileName = str.substr(0, str.find(delimiter));
             //erase second token
@@ -469,153 +394,62 @@ public:
         }
         else if (action == "Ignore")
         {
-
-          /*
-          string sender = str.substr(0, str.find(delimiter));
-          str.erase(0, str.find(delimiter)+1);
-          string offender = str.substr(0, str.find(delimiter));
-          int test = str.find(delimiter);
-          //str.erase(0, str.find(delimiter)+1);
-
-          if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
-          {
-
-          }
-          else if (getNick() == sender)
-          {
-            ignoreList.push_back(offender);
-            //ignoreListLength.push_back(offender.length());
-            ignoreListLength.push_back(test);
-           
-
-
-            //ignoreList.push_back(offender);
-            //ignoreListLength.push_back(offender.length());
-
-          }
-          
-          */
+          //do nothing because this is handled in fillVectors()
         }
         else if (action == "Connected")
         {
-          /*
-            string person = str.substr(0, str.find(delimiter));
-            
-
-
-            int len = memberList.size();
-            int found = 0;
-
-            
-            for (int j = 0; j<len;j++)
-            {
-              if (person == memberList.at(j))
-              {
-                 found = 1;
-              }
-            }
-
-
-
-            if (found == 0)
-            {
-                int personLen = person.length();
-                memberList.push_back(person);
-                memberListLength.push_back(personLen);
-            }
-            */
-            
-
-
+          //do nothing because this is handled in fillVectors()
         }
         else if (action == "Disconnected")
         {
-
-          /*
-          string person = str.substr(0, str.find(delimiter));
-          int len = memberList.size();
-
-            
-            for (int j = 0; j<len;j++)
-            {
-              if (person == memberList.at(j))
-              {
-                  memberList.erase (memberList.begin() + j);
-                  memberListLength.erase (memberListLength.begin() + j);
-              }
-            }
-            */
-
-
-
-
+          //do nothing because this is handled in fillVectors()
         }
         else if (action == "DeleteRoom")
         {
             //need to make a room vector
             //pop for remove
-
-
-
         }
         else if (action == "CreateRoom")
         {
             //need to make a room vector
             //push for create
 
-
         }
+        //display private messages to user, if INT code found
         else if (action == "PrivateMessage")
         {
-            //string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
-            //string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
+          //get second token
+          string sender = str.substr(0, str.find(delimiter));
+          //erase second token//
+          str.erase(0, str.find(delimiter)+1);
+          //get third token
+          string digit = str.substr(0, str.find(delimiter));
+          //erase third token
+          str.erase(0, str.find(delimiter)+1);
+          //get fourth token
+          string msg = str.substr(0, str.find(delimiter));
+          //erase fourth token
+          if (code == digit)
+          {
 
+            string finalMsg("(" + sender + "): " + msg);
+            int n = msg.length() + sender.length() + 12;
+            char char_array[n + 1];
+            strcpy(char_array, finalMsg.c_str());
 
-            //get second token
-            string sender = str.substr(0, str.find(delimiter));
-            //erase second token//
-            str.erase(0, str.find(delimiter)+1);
-            //get third token
-            string digit = str.substr(0, str.find(delimiter));
-            //erase third token
-            str.erase(0, str.find(delimiter)+1);
-            //get fourth token
-            string msg = str.substr(0, str.find(delimiter));
-            //erase fourth token
-            //str.erase(0, str.find(delimiter)+1);
+            int n2 = dateTime.length();
+            char char_array2[n2 + 1];
+            strcpy(char_array2, dateTime.c_str());
 
-            //prvtMsg(sender, digit, msg);
-            if (code == digit)
-            {
-
-              string finalMsg("(" + sender + "): " + msg);
-              int n = msg.length() + sender.length() + 12;
-              char char_array[n + 1];
-              strcpy(char_array, finalMsg.c_str());
-
-              int n2 = dateTime.length();
-              char char_array2[n2 + 1];
-              strcpy(char_array2, dateTime.c_str());
-
-              printMsg(char_array, char_array2, n);
-            }
-
-
-            //int n = sysLogLength[i] - action.length() - sender.length() - digit.length();
-                //char char_array[n + 1];
-                //strcpy(char_array, str.c_str());
-            ////mvprintw(row,1,"%s", char_array);
-            //mvprintw(row,1,"test");
-            //row = row -1;
-
-
-
-
+            printMsg(char_array, char_array2, n);
+          }
         }
-      //redraw the prompt at bottom left (ex- "Nick: ")
       prompt();
       }
   }
+  //populate memberlist and ignorelist vectors
+  //used for displaying both lists to user
+  //also provides functionality to other functions
   void fillVectors()
   {
       //get size of current event
@@ -624,96 +458,84 @@ public:
       //loop through all events
       for (int i = logLength-1; i>=0;i--)
       {
-
         //move into local variable
         string str(sysLog.at(i));
 
-
-
         //chosen format
         string delimiter = ";";
+
         //get first token
         string dateTime = str.substr(0, str.find(delimiter));
+
         //erase first token
         str.erase(0, str.find(delimiter)+1);
 
-
         //get second token
         string action = str.substr(0, str.find(delimiter));
+
         //erase second token
         str.erase(0, str.find(delimiter)+1);
+
+        //find users in ignore events and add them from the vector
         if (action == "Ignore")
         {
           string sender = str.substr(0, str.find(delimiter));
           str.erase(0, str.find(delimiter)+1);
-          //int offenderSize = str.find(delimiter);
-          //string offender = str.substr(0, offenderSize);
           string offender = str.substr(0, str.find(delimiter));
-
-
-
-
           if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
           {
 
           }
           else if (getNick() == sender)
           {
-            //offenderSize is wrong
             ignoreList.push_back(offender);
             ignoreListLength.push_back(offender.length());
           }
 
         }
+        //find users in connect events and add them to the vector
         else if (action == "Connected")
         {
           string person = str.substr(0, str.find(delimiter));
-            
+          int len = memberList.size();
+          int found = 0;
 
-
-            int len = memberList.size();
-            int found = 0;
-
-            
-            for (int j = 0; j<len;j++)
+          
+          for (int j = 0; j<len;j++)
+          {
+            if (person == memberList.at(j))
             {
-              if (person == memberList.at(j))
-              {
-                 found = 1;
-              }
+                found = 1;
             }
-
-
-
-            if (found == 0)
-            {
-                int personLen = person.length();
-                memberList.push_back(person);
-                memberListLength.push_back(personLen);
-            }
+          }
+          if (found == 0)
+          {
+              int personLen = person.length();
+              memberList.push_back(person);
+              memberListLength.push_back(personLen);
+          }
         }
+        //find users in disconnect events and remove them from the vector
         else if (action == "Disconnected")
         {
           string person = str.substr(0, str.find(delimiter));
           int len = memberList.size();
-
-            
-            for (int j = 0; j<len;j++)
+          for (int j = 0; j<len;j++)
+          {
+            if (person == memberList.at(j))
             {
-              if (person == memberList.at(j))
-              {
-                  memberList.erase (memberList.begin() + j);
-                  memberListLength.erase (memberListLength.begin() + j);
-              }
+                memberList.erase (memberList.begin() + j);
+                memberListLength.erase (memberListLength.begin() + j);
             }
+          }
         }
         prompt();
       }
 
   }
+  //wipes entire chat middle section. leaving the header and footer alone.
   void clearChat()
   {
-      //wipes entire chat middle section. leaving the header and footer alone.
       row = maxrow-3;
       col = 1;
       for (int r = 2;r<maxrow-2;r++)
@@ -724,6 +546,8 @@ public:
           }
       }
   }
+  //iterate through vector "memberList"
+  //display vector data to user's screen
   string showMemberList()
   {
     fillVectors();
@@ -750,7 +574,8 @@ public:
     getstr(str);
     return str;
   }
-  
+  //iterate through vector "ignoreList"
+  //display vector data to user's screen
   string showIgnoreList()
   {
     fillVectors();
@@ -762,58 +587,52 @@ public:
             for (int j = 0; j<len;j++)
             {
               int n = ignoreListLength.at(j);
-              //string newStr = ignoreList.at(j).substr(0, n);
               char char_array[n + 1];
               string str(ignoreList.at(j));
               str.erase(n, str.length());
               strcpy(char_array, str.c_str());
               int printOnRow = maxrow-(4+j);
-              
               mvprintw(printOnRow,0, "[%s]", char_array);
-             
-
-              
             }
-
-
-            
           prompt();
           //read user input
           char str[100];
           getstr(str);
           return str;
   }
+  //display full list of commands to user
   string showHelpMenu()
   {
-          clearChat();
-          int size = 14;
-          string help[size];
-          help[13] = "**HELP MENU**";
-          help[12] = "/quit - exit SuperChat";
-          help[11] = "/time - turn off timestamps";
-          help[10] = "/members <room> - show members in an existing chat room";
-          help[9] = "/join <room> - join an existing chat room";
-          help[8] = "/leave - switch to lobby";
-          help[7] = "/create <room> - creates a new chat room";
-          help[6] = "/delete <room> - creates a new chat room";
-          help[5] = "/private <int> <message> - sends a private message";
-          help[4] = "/rename <name> - changes your account name";
-          help[3] = "/ignore <user> - ignore another user";
-          help[2] = "/ignorelist - show your ignored users";
-          help[1] = "/transfer <path> <user> - transfer file to another user";
-          help[0] = "**Enter any key to close menu**";
-          for (int i = 0 ;i<size;i++)
-          {
-              int n = help[i].length();
-              char char_array[n + 1];
-              strcpy(char_array, help[i].c_str());
-              mvprintw(maxrow-(4+i),0, char_array);
-          }
-          prompt();
-          //read user input
-          char str[100];
-          getstr(str);
-          return str;
+    //build array to display
+    clearChat();
+    int size = 14;
+    string help[size];
+    help[13] = "**HELP MENU**";
+    help[12] = "/quit - exit SuperChat";
+    help[11] = "/time - turn off timestamps";
+    help[10] = "/members <room> - show members in an existing chat room";
+    help[9] = "/join <room> - join an existing chat room";
+    help[8] = "/leave - switch to lobby";
+    help[7] = "/create <room> - creates a new chat room";
+    help[6] = "/delete <room> - creates a new chat room";
+    help[5] = "/private <int> <message> - sends a private message";
+    help[4] = "/rename <name> - changes your account name";
+    help[3] = "/ignore <user> - ignore another user";
+    help[2] = "/ignorelist - show your ignored users";
+    help[1] = "/transfer <path> <user> - transfer file to another user";
+    help[0] = "**Enter any key to close menu**";
+    for (int i = 0 ;i<size;i++)
+    {
+        int n = help[i].length();
+        char char_array[n + 1];
+        strcpy(char_array, help[i].c_str());
+        mvprintw(maxrow-(4+i),0, char_array);
+    }
+    prompt();
+    //read user input
+    char str[100];
+    getstr(str);
+    return str;
   }
 
   //function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
@@ -840,12 +659,6 @@ public:
       char time_array[n2 + 1];
       strcpy(time_array, str2.c_str());
 
-
-
-
-
-
-
       mvprintw(0, 0, "%s", time_array);
       mvprintw(0, 10, "%s", room_array);
       mvprintw(0, maxcol-20, "For help: type /help");
@@ -861,17 +674,10 @@ public:
           mvprintw(maxrow-2, i, "=");
       }
   }
-
+  //convert string to char[] then send it off to the server
   void sendEvent(string event)
   {
-      //build new chat_message
       chat_message msg;
-
-      //build string according to format standards
-      //Time;Action;Room;Actor;StringVal
-      //string concat(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
-
-      //convert string to char[] then send it off to the server
       int n = event.length();
       char char_array[n + 1];
       strcpy(char_array, event.c_str());
@@ -884,9 +690,9 @@ private:
   //asio chat example that initlizes the connection to the server
   void do_connect(const tcp::resolver::results_type& endpoints)
   {
-         //on connect, set user default room to Lobby
+    //on connect, set user default room to Lobby
     changeRoom("Lobby");
-        //get screen size and initialize counters
+    //get screen size and initialize counters
     getScreen();
 
 
@@ -916,8 +722,8 @@ private:
           }
         });
   }
-  //primary method that iterates through all msgs in queue.
-  //Method prints messages and calls functions to process server info for the client
+  //primary method that iterates through all events from server
+  //pushes events into the vector "sysLog"
   void do_read_body()
   {
       asio::async_read(socket_,
@@ -930,8 +736,6 @@ private:
                     //string str(read_msg_.body());
                     sysLog.push_back(read_msg_.body());
                     sysLogLength.push_back(read_msg_.body_length());
-
-
 
                     //recursion
                     do_read_header();
@@ -981,11 +785,6 @@ private:
   vector<int> ignoreListLength;
   vector<string> memberList;
   vector<int> memberListLength;
-  
-  //benjamin - private variable INT - code/digit
-  //sunil - private variable string<vector> - memberlist vector
-  //ricardo - private variable string<vector> - roomList vector
-
 };
 
 int main(int argc, char* argv[])
@@ -1004,302 +803,203 @@ int main(int argc, char* argv[])
         chat_client c(io_context, endpoints);
         std::thread t([&io_context](){ io_context.run(); });
 
-        //ncurses display initializations
-        //char welcome1[]="Welcome to Super Chat";
-        //char welcome2[]="Enter user name: ";
-        //int row,col;
-        int loop = 1;
-        //initlize ncurses window
+        //initlize ncurses 
         initscr();
         cbreak();
         raw();
+
         //enable keypad input
         keypad(stdscr, TRUE);
+
         //show user input
         echo();
-        //get screen size
-        //getmaxyx(stdscr,row,col);
-        //print welcome messages to screen
-        //mvprintw((row/2)-3,(col-strlen(welcome1))/2,"%s",welcome1);
-        //mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
-
-
-
-/*
-  //test case
-        //c.memberList.push_back("nick"); 
-
-        //set user's name
-        //impliment dupe checking in c.changeNick
-        bool dupe = false;
-        dupe = c.changeNick(nameStr);
-
-	while(dupe)
-        {
-                char copy[]="Name already taken";
-                //clear welcome messages away
-                c.clearRow((row/2)-3);
-		c.clearRow(row/2);
-                mvprintw((row/2)-3,(col-strlen(copy))/2,"%s",copy);
-                mvprintw(row/2,(col-strlen(welcome2))/2,"%s",welcome2);
-                getnstr(nameArray,10);
-                //convert to string
-                string nameStr(nameArray);
-                dupe = c.changeNick(nameStr);
-        }
         
-
-*/
-
-
-
-
-        //set user's name
-        //impliment dupe checking in c.changeNick
+        //generate member list and ignore list
         c.fillVectors();
         
+        //slow down the loop so that the server can catch up
         sleep_for(nanoseconds(1000000));
+
+        //show login screen so user can input account name
         c.loginScreen(0);
         
-
         //main loop starts here
+        int loop = 1;
         while (loop == 1)
         {
-          
           //slow down the loop so that the server can catch up
-          
           sleep_for(nanoseconds(1000000));
 
+          //redraw top and bottom panels and prompt
+          c.clearChat();
+          c.showHeaderFooter();
+          c.readSystemLog();
+          c.showHeaderFooter();
+          c.prompt();
 
-            //redraw top and bottom panels and prompt
-            c.clearChat();
-            c.showHeaderFooter();
-            c.readSystemLog();
-            c.showHeaderFooter();
-            c.prompt();
+          //initialize input storage
+          char str[100];
 
+          //read user input
+          getstr(str);
 
+          //convert to string
+          string line(str);
 
-
-
-            //initialize input storage
-            char str[100];
-
-
-
-            //read user input
-            getstr(str);
-
-            //convert to string
-            string line(str);
-
-            //COMMANDS
-            //display help menu
-            if (line.find("/help") == 0)
-            {
-                line.assign(c.showHelpMenu());
-            }
-             //display list of ignored users
-            if (line.find("/ignorelist") == 0)
-            {
-                line.assign(c.showIgnoreList());
-            }
-             //display list of ignored users
-            if (line.find("/memberlist") == 0)
-            {
-                line.assign(c.showMemberList());
-            }
-             //display list of ignored users
-            if (line.find("/debug") == 0)
-            {
-                line.assign(c.debug());
-            }
-            //file transfer
-            if (line.find("/transfer") == 0)
-            {
-                //chosen format
-                string delimiter = " ";
-
-                line.erase(0, line.find(delimiter)+1);
-                //get first token
-                string filepath = line.substr(0, line.find(delimiter));
-                //erase first token
-                line.erase(0, line.find(delimiter)+1);
-
-                //get second token
-                string user = line.substr(0, line.find(delimiter));
-                //erase second token
-                //line.erase(0, line.find(delimiter)+1);
-
-                //get third token
-                //string user = line.substr(0, line.find(delimiter));
-                //erase third token
-                //line.erase(0, line.find(delimiter)+1);
-
-
-                fstream fp;
-                fp.open (filepath);
-                string content;
-                string fsline;
-                if (fp.is_open())
-                {
-                  while ( getline (fp,fsline) )
-                  {
-                    content = content + fsline;
-                  }
-                  fp.close();
-                }
-  
-
-                string event(c.getTime() + ";Transfer;" + filepath + ";" + c.getNick() + ";" + user + ";" + content + ";");
-                c.sendEvent(event);
-            }
-            //rename account name
-            else if (line.find("/rename") == 0)
-            {
-                //TODO -  verify that name does not exist
-                string newName = line.substr(line.find(" ")+1, line.length());
-                c.setNick(newName);
-            }
-
-            else if (line.find("/listrooms") == 0)
-            {
-                //loop through c.roomList() and print all rooms
-            }
-            //join a different existing room
-            else if (line.find("/join") == 0)
-            {
-                //TODO -  verify that room exists
-                string newRoom = line.substr(line.find(" ")+1, line.length());
-                c.changeRoom(newRoom);
-            }
-            //leave current room. default lobby
-            else if (line.find("/leave") == 0)
-            {
-                c.changeRoom("Lobby");
-            }
-            //ignore other user
-            else if (line.find("/ignore") == 0)
-            {
+          //COMMANDS
+          //display help menu
+          if (line.find("/help") == 0)
+          {
+              line.assign(c.showHelpMenu());
+          }
+            //display list of ignored users
+          if (line.find("/ignorelist") == 0)
+          {
+              line.assign(c.showIgnoreList());
+          }
+            //display list of ignored users
+          if (line.find("/memberlist") == 0)
+          {
+              line.assign(c.showMemberList());
+          }
+            //display list of ignored users
+          if (line.find("/debug") == 0)
+          {
+              line.assign(c.debug());
+          }
+          //file transfer
+          if (line.find("/transfer") == 0)
+          {
               //chosen format
-                string delimiter = " ";
-                //get first token
-                string token1 = line.substr(0, line.find(delimiter));
-                //erase first token
-                line.erase(0, line.find(delimiter)+1);
+              string delimiter = " ";
+              //erase command
+              line.erase(0, line.find(delimiter)+1);
+              //get first token
+              string filepath = line.substr(0, line.find(delimiter));
+              //erase first token
+              line.erase(0, line.find(delimiter)+1);
+              //get second token
+              string user = line.substr(0, line.find(delimiter));
 
-                //get second token
-                string token2 = line.substr(0, line.find(delimiter));
-
-                if (line.find(delimiter) > 1)
-                {
-                    string event(c.getTime() + ";Ignore;" + c.getNick() + ";" + token2 + ";");
-                    c.sendEvent(event);
-                }
-
-              
-            
-            }
-           
-            //send private message
-            else if (line.find("/setprivate") == 0)
-            {
-                //in chat_client - write a get/set methods for that local private variable
-                //put here - c.setDigit(5);
-                string digit2 =line.substr(line.find(" ")+1, line.length());
-                c.setDigit(digit2);
-
-
-            }
-            else if (line.find("/private") == 0)
-            {
-                //int CodeNum= 0;
-                //string privateMessage =line.substr(line.find(" ")+1, line.length());
-                //string MsgToSend =privateMessage.substr(privateMessage.find("")+2,privateMessage.length());
-                //string digit = privateMessage.substr(0,1);
-                //stringstream ToInt(digit);
-                //ToInt >> CodeNum;
-
-                //sprintf(str, "%02d:%02d", hour, min)
-
-
-
-                //string event("PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend);
-                //c.sendEvent(event);
-
-
-                //int CodeNum= 0;
-                string privateMessage =line.substr(line.find(" ")+1, line.length());
-                string MsgToSend =privateMessage.substr(privateMessage.find("")+2,privateMessage.length());
-                string digit = privateMessage.substr(0,1);
-
-                //set private here  c.setDigit()
-
-                string event(c.getTime() + ";PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend + ";");
-                c.sendEvent(event);
-
-            }
-            //create new chat room
-            else if (line.find("/create") == 0)
-            {
-                //TODO -  verify that room does not exist
-
-
-                //if c.roomList.length() < 10
-                //then continue
-                //else warn the users theres max limit of 10 chat rooms
-                string newRoom = line.substr(line.find(" ")+1, line.length());
-                string event(c.getTime() + ";CreatedRoom;" + newRoom + ";" + c.getNick());
-                c.sendEvent(event);
-
-            }
-            //delete existing chat room
-            else if (line.find("/delete") == 0)
-            {
-                //TODO -  verify that room exists
-                //should we check to see if there are any users in the chat room first
-                string newRoom = line.substr(line.find(" ")+1, line.length());
-                string event(c.getTime() + ";DeleteRoom;" + newRoom + ";" + c.getNick());
-                c.sendEvent(event);
-            }
-            //display current members in current room
-            else if (line.find("/members") == 0)
-            {
-
-            }
-            //quit the app
-            else if (line.find("/quit") == 0)
-            {
-                string event(c.getTime() + ";Disconnected;" + c.getNick() + ";");
-                c.sendEvent(event); //send disconnect msg to server
-                loop = 0; // this makes it quit
-
-            }
-            //turn off timestamp
-            else if (line.find("/time") == 0)
-            {
-              if (c.getTimestamp() == 0)
+              fstream fp;
+              fp.open (filepath);
+              string content;
+              string fsline;
+              if (fp.is_open())
               {
-                  c.setTimestamp(1);
+                while ( getline (fp,fsline) )
+                {
+                  content = content + fsline;
+                }
+                fp.close();
               }
-              else {  c.setTimestamp(0);}
-            }
-         
-            //bad command
-            else if (line.find("/") == 0)
+              string event(c.getTime() + ";Transfer;" + filepath + ";" + c.getNick() + ";" + user + ";" + content + ";");
+              c.sendEvent(event);
+          }
+          //rename account name
+          else if (line.find("/rename") == 0)
+          {
+              //TODO -  verify that name does not exist
+              string newName = line.substr(line.find(" ")+1, line.length());
+              c.setNick(newName);
+          }
+
+          else if (line.find("/listrooms") == 0)
+          {
+              //loop through c.roomList() and print all rooms
+          }
+          //join a different existing room
+          else if (line.find("/join") == 0)
+          {
+              //TODO -  verify that room exists
+              string newRoom = line.substr(line.find(" ")+1, line.length());
+              c.changeRoom(newRoom);
+          }
+          //leave current room. default lobby
+          else if (line.find("/leave") == 0)
+          {
+              c.changeRoom("Lobby");
+          }
+          //ignore other user
+          else if (line.find("/ignore") == 0)
+          {
+            //chosen format
+              string delimiter = " ";
+              //get first token
+              string token1 = line.substr(0, line.find(delimiter));
+              //erase first token
+              line.erase(0, line.find(delimiter)+1);
+
+              //get second token
+              string token2 = line.substr(0, line.find(delimiter));
+
+              if (line.find(delimiter) > 1)
+              {
+                  string event(c.getTime() + ";Ignore;" + c.getNick() + ";" + token2 + ";");
+                  c.sendEvent(event);
+              }
+          }
+          //send private message
+          else if (line.find("/setprivate") == 0)
+          {
+              string digit2 =line.substr(line.find(" ")+1, line.length());
+              c.setDigit(digit2);
+          }
+          else if (line.find("/private") == 0)
+          {
+              string privateMessage =line.substr(line.find(" ")+1, line.length());
+              string MsgToSend =privateMessage.substr(privateMessage.find("")+2,privateMessage.length());
+              string digit = privateMessage.substr(0,1);
+              string event(c.getTime() + ";PrivateMessage;"+ c.getNick() + ";" + digit +";" + MsgToSend + ";");
+              c.sendEvent(event);
+
+          }
+          //create new chat room
+          else if (line.find("/create") == 0)
+          {
+              string newRoom = line.substr(line.find(" ")+1, line.length());
+              string event(c.getTime() + ";CreatedRoom;" + newRoom + ";" + c.getNick());
+              c.sendEvent(event);
+
+          }
+          //delete existing chat room
+          else if (line.find("/delete") == 0)
+          {
+              string newRoom = line.substr(line.find(" ")+1, line.length());
+              string event(c.getTime() + ";DeleteRoom;" + newRoom + ";" + c.getNick());
+              c.sendEvent(event);
+          }
+          //quit the app
+          else if (line.find("/quit") == 0)
+          {
+              string event(c.getTime() + ";Disconnected;" + c.getNick() + ";");
+              c.sendEvent(event); //send disconnect msg to server
+              loop = 0; // this makes it quit
+          }
+          //toggle timestamps on chat messages
+          else if (line.find("/time") == 0)
+          {
+            if (c.getTimestamp() == 0)
             {
-
+                c.setTimestamp(1);
             }
-            //no valid command was found
-            //assume that this is just a regular chat message to current room
-            else
-            {
-                string event(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
-                c.sendEvent(event);
+            else {  c.setTimestamp(0);}
+          }
+          //unknown command
+          else if (line.find("/") == 0)
+          {
 
-            }
+          }
+          //no valid command was found
+          //assume that this is just a regular chat message to current room
+          else
+          {
+              string event(c.getTime() + ";ChatMsg;" + c.getRoom() + ";" + c.getNick() + ": " + line);
+              c.sendEvent(event);
 
-            str[0] = '\0';
+          }
+
+          str[0] = '\0';
         }
 
         //close chat client and join threads
@@ -1312,10 +1012,6 @@ int main(int argc, char* argv[])
         }
         //close ncurses window
         endwin();
-
-        //sunil - if user typed /quit then send disconnect msg to server
-        //sunil - also check for ctl+c using signal handlers
         return 0;
 }
-
 
