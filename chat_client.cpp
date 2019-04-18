@@ -406,15 +406,50 @@ public:
         }
         else if (action == "DeleteRoom")
         {
-            //need to make a room vector
-            //pop for remove
+          int found = 0;
+          //get third token
+          string nRoom = str.substr(0, str.find(delimiter));
+          //size of vector
+          int n = roomList.size();
+          //look for chatroom to delete
+          for (int i = 0; i < n; i++)
+          {
+            string vecroom = roomList[i];
+            if (nRoom == vecroom)
+            {
+              found = 1;
+              break;
+            }
+          }
+          //push for create
+          if (found == 1)
+            DeleteChatRoom(i);
+          //pop for remove
         }
         else if (action == "CreateRoom")
         {
-            //need to make a room vector
-            //push for create
-
+          //get third token
+          string nRoom = str.substr(0, str.find(delimiter));
+          //erase third token
+          str.erase(0, str.find(delimiter) + 1);
+          //size of vector
+          int n = roomList.size();
+          int found = 0;
+          //Check if chatroom already exists
+          for (i = 0; i < n; i++)
+          {
+            string vecroom = roomList[i];
+            if (nRoom == vecroom)
+            {
+              found = 1;
+              break;
+            }
+          }
+          //push for create
+          if (found == 0)
+            CreateChatRoom(nRoom);
         }
+
         //display private messages to user, if INT code found
         else if (action == "PrivateMessage")
         {
@@ -579,46 +614,49 @@ public:
   string showIgnoreList()
   {
     fillVectors();
-          clearChat();
+    clearChat();
 
-            int len = ignoreList.size();
-            mvprintw(maxrow-(4+len),0, "**IGNORE LIST**");
-            
-            for (int j = 0; j<len;j++)
-            {
-              int n = ignoreListLength.at(j);
-              char char_array[n + 1];
-              string str(ignoreList.at(j));
-              str.erase(n, str.length());
-              strcpy(char_array, str.c_str());
-              int printOnRow = maxrow-(4+j);
-              mvprintw(printOnRow,0, "[%s]", char_array);
-            }
-          prompt();
-          //read user input
-          char str[100];
-          getstr(str);
-          return str;
+      int len = ignoreList.size();
+      mvprintw(maxrow-(4+len),0, "**IGNORE LIST**");
+      
+      for (int j = 0; j<len;j++)
+      {
+        int n = ignoreListLength.at(j);
+        char char_array[n + 1];
+        string str(ignoreList.at(j));
+        str.erase(n, str.length());
+        strcpy(char_array, str.c_str());
+        int printOnRow = maxrow-(4+j);
+        mvprintw(printOnRow,0, "[%s]", char_array);
+      }
+    prompt();
+    //read user input
+    char str[100];
+    getstr(str);
+    return str;
   }
   //display full list of commands to user
   string showHelpMenu()
   {
     //build array to display
     clearChat();
-    int size = 14;
+    int size = 17;
     string help[size];
-    help[13] = "**HELP MENU**";
-    help[12] = "/quit - exit SuperChat";
-    help[11] = "/time - turn off timestamps";
-    help[10] = "/members <room> - show members in an existing chat room";
-    help[9] = "/join <room> - join an existing chat room";
-    help[8] = "/leave - switch to lobby";
-    help[7] = "/create <room> - creates a new chat room";
-    help[6] = "/delete <room> - creates a new chat room";
-    help[5] = "/private <int> <message> - sends a private message";
-    help[4] = "/rename <name> - changes your account name";
-    help[3] = "/ignore <user> - ignore another user";
-    help[2] = "/ignorelist - show your ignored users";
+    help[16] = "**HELP MENU**";
+    help[15] = "/quit - exit SuperChat";
+    help[14] = "/time - turn off timestamps";
+    help[13] = "/memberlist - show all members online";
+    help[12] = "/roomlist - show all members online";
+    help[11] = "/join <room> - join an existing chat room";
+    help[10] = "/leave - switch to lobby";
+    help[9] = "/create <room> - creates a new chat room";
+    help[8] = "/delete <room> - creates a new chat room";
+    help[7] = "/private <int> <message> - sends a private message to digit";
+    help[6] = "/setprivate <int> - set digit for recieving private messages";
+    help[5] = "/rename <name> - changes your account name";
+    help[4] = "/ignore <user> - ignore another user";
+    help[3] = "/ignorelist - show your ignored users";
+    help[2] = "/debug - show raw event log (admin only)";
     help[1] = "/transfer <path> <user> - transfer file to another user";
     help[0] = "**Enter any key to close menu**";
     for (int i = 0 ;i<size;i++)
@@ -633,7 +671,47 @@ public:
     char str[100];
     getstr(str);
     return str;
+
   }
+
+
+
+  void DeleteChatRoom(int index)
+  {
+    roomList.erase(roomList.begin() + index);
+  }
+  void CreateChatRoom(string chatRoomName)
+  {
+    roomList.push_back(chatRoomName);
+  }
+  string showRoomList()
+  {
+    fillVectors();
+    clearChat();
+
+    int len = ignoreList.size();
+    mvprintw(maxrow - (4 + len), 0, "**ROOM LIST**");
+
+    for (int j = 0; j < len; j++)
+    {
+      int n = ignoreListLength.at(j);
+      char char_array[n + 1];
+      string str(ignoreList.at(j));
+      str.erase(n, str.length());
+      strcpy(char_array, str.c_str());
+      int printOnRow = maxrow - (4 + j);
+      mvprintw(printOnRow, 0, "[%s]", char_array);
+    }
+    prompt();
+    //read user input
+    char str[100];
+    getstr(str);
+    return str;
+  }
+
+
+
+
 
   //function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
   void showHeaderFooter()
@@ -785,6 +863,8 @@ private:
   vector<int> ignoreListLength;
   vector<string> memberList;
   vector<int> memberListLength;
+  vector<string> roomList;
+  vector<int> roomListLength;
 };
 
 int main(int argc, char* argv[])
@@ -845,7 +925,7 @@ int main(int argc, char* argv[])
 
           //convert to string
           string line(str);
-
+          
           //COMMANDS
           //display help menu
           if (line.find("/help") == 0)
@@ -866,6 +946,10 @@ int main(int argc, char* argv[])
           if (line.find("/debug") == 0)
           {
               line.assign(c.debug());
+          }
+          if (line.find("/roomlist") == 0)
+          {
+            line.assign(c.showRoomList());
           }
           //file transfer
           if (line.find("/transfer") == 0)
@@ -904,10 +988,7 @@ int main(int argc, char* argv[])
               c.setNick(newName);
           }
 
-          else if (line.find("/listrooms") == 0)
-          {
-              //loop through c.roomList() and print all rooms
-          }
+          
           //join a different existing room
           else if (line.find("/join") == 0)
           {
@@ -958,7 +1039,7 @@ int main(int argc, char* argv[])
           else if (line.find("/create") == 0)
           {
               string newRoom = line.substr(line.find(" ")+1, line.length());
-              string event(c.getTime() + ";CreatedRoom;" + newRoom + ";" + c.getNick());
+              string event(c.getTime() + ";CreateRoom;" + newRoom + ";" + c.getNick());
               c.sendEvent(event);
 
           }
