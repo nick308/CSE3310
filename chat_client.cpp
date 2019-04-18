@@ -689,14 +689,14 @@ public:
     fillVectors();
     clearChat();
 
-    int len = ignoreList.size();
+    int len = roomList.size();
     mvprintw(maxrow - (4 + len), 0, "**ROOM LIST**");
 
     for (int j = 0; j < len; j++)
     {
-      int n = ignoreListLength.at(j);
+      int n = roomListLength.at(j);
       char char_array[n + 1];
-      string str(ignoreList.at(j));
+      string str(roomList.at(j));
       str.erase(n, str.length());
       strcpy(char_array, str.c_str());
       int printOnRow = maxrow - (4 + j);
@@ -1038,16 +1038,16 @@ int main(int argc, char* argv[])
           //create new chat room
           else if (line.find("/create") == 0)
           {
-              string newRoom = line.substr(line.find(" ")+1, line.length());
-              string event(c.getTime() + ";CreateRoom;" + newRoom + ";" + c.getNick());
+              string room = line.substr(line.find(" ")+1, line.length());
+              string event(c.getTime() + ";CreateRoom;" + room + ";" + c.getNick());
               c.sendEvent(event);
 
           }
           //delete existing chat room
           else if (line.find("/delete") == 0)
           {
-              string newRoom = line.substr(line.find(" ")+1, line.length());
-              string event(c.getTime() + ";DeleteRoom;" + newRoom + ";" + c.getNick());
+              string room = line.substr(line.find(" ")+1, line.length());
+              string event(c.getTime() + ";DeleteRoom;" + room + ";" + c.getNick());
               c.sendEvent(event);
           }
           //quit the app
@@ -1095,4 +1095,3 @@ int main(int argc, char* argv[])
         endwin();
         return 0;
 }
-
