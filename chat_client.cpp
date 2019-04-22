@@ -531,6 +531,15 @@ public:
         string offender = str.substr(0, str.find(delimiter));
         if (find(ignoreList.begin(), ignoreList.end(), offender) != ignoreList.end())
         {
+          int len = ignoreList.size();
+          for (int j = 0; j < len; j++)
+          {
+            if (offender == ignoreList.at(j))
+            {
+              ignoreList.erase(ignoreList.begin() + j);
+              ignoreListLength.erase(ignoreListLength.begin() + j);
+            }
+          }
         }
         else if (getNick() == sender)
         {
