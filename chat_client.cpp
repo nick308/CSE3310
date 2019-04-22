@@ -18,8 +18,7 @@ make
 #include <time.h>
 #include <fstream>
 
-
-
+#include <signal.h>
 
 using asio::ip::tcp;
 using namespace std;
@@ -106,56 +105,63 @@ public:
   //get name from user. check for dupes
   void loginScreen(int dupe)
   {
-    clearChat();
-    getScreen();
-    //initilize place to store user's account name
-    char nameArray[20] = {0};
-    if (dupe == 0)
+    try
     {
-      char welcome1[]="Welcome to Super Chat";
-      char welcome2[]="Enter user name: ";
-      mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
-      mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
-    }
-    else
-    {
-      char welcome1[]="That name is already taken";
-      char welcome2[]="Enter user name: ";
-      mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
-      mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
-    }
-    
-    getstr(nameArray);
-    string nameStr(nameArray);
-    int found = 0;
-    int lenMembers = memberList.size();
-    
-    for (int j = 0; j<lenMembers;j++)
-    {
-      int n = memberListLength.at(j);
-      string memberCompare(memberList.at(j));
-      memberCompare.erase(n, memberCompare.length());
-      if(nameStr == memberCompare)
+      clearChat();
+      getScreen();
+      //initilize place to store user's account name
+      char nameArray[20] = {0};
+      if (dupe == 0)
       {
-        found = 1;
-        break;
+        char welcome1[]="Welcome to Super Chat";
+        char welcome2[]="Enter user name: ";
+        mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
+        mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
+      }
+      else
+      {
+        char welcome1[]="That name is already taken";
+        char welcome2[]="Enter user name: ";
+        mvprintw((maxrow/2)-3,(maxcol-strlen(welcome1))/2,"%s",welcome1);
+        mvprintw(maxrow/2,(maxcol-strlen(welcome2))/2,"%s",welcome2);
+      }
+      
+      getstr(nameArray);
+      string nameStr(nameArray);
+      int found = 0;
+      int lenMembers = memberList.size();
+      
+      for (int j = 0; j<lenMembers;j++)
+      {
+        int n = memberListLength.at(j);
+        string memberCompare(memberList.at(j));
+        memberCompare.erase(n, memberCompare.length());
+        if(nameStr == memberCompare)
+        {
+          found = 1;
+          break;
 
+        }
+      }
+      if (found == 1)
+      {
+        sleep_for(nanoseconds(1000000));
+        loginScreen(1);
+      }
+      else
+      {
+        setNick(nameStr);
+        setTimestamp(1);
+        string msg(getTime() + ";Connected;" + getNick() + ";");
+        sendEvent(msg);
+        clearChat();
+        showHeaderFooter();
+        prompt();
       }
     }
-    if (found == 1)
+    catch (char *excp)
     {
-      sleep_for(nanoseconds(1000000));
-      loginScreen(1);
-    }
-    else
-    {
-      setNick(nameStr);
-      setTimestamp(1);
-      string msg(getTime() + ";Connected;" + getNick() + ";");
-      sendEvent(msg);
-      clearChat();
-      showHeaderFooter();
-      prompt();
+      cout << "Caught " << excp;
     }
   }
 
@@ -442,52 +448,11 @@ public:
         }
         else if (action == "DeleteRoom")
         {
-          /*
-          int found = 0;
-          //get third token
-          string nRoom = str.substr(0, str.find(delimiter));
-          //size of vector
-          int n = roomList.size();
-          //look for chatroom to delete
-          for (int i = 0; i < n; i++)
-          {
-            string vecroom = roomList[i];
-            if (nRoom == vecroom)
-            {
-              found = 1;
-              break;
-            }
-          }
-          //push for create
-          if (found == 1)
-            DeleteChatRoom(i);
-          //pop for remove
-          */
+          //do nothing because this is handled in fillVectors()
         }
         else if (action == "CreateRoom")
         {
-          /*
-          //get third token
-          string nRoom = str.substr(0, str.find(delimiter));
-          //erase third token
-          str.erase(0, str.find(delimiter) + 1);
-          //size of vector
-          int n = roomList.size();
-          int found = 0;
-          //Check if chatroom already exists
-          for (i = 0; i < n; i++)
-          {
-            string vecroom = roomList[i];
-            if (nRoom == vecroom)
-            {
-              found = 1;
-              break;
-            }
-          }
-          //push for create
-          if (found == 0)
-            CreateChatRoom(nRoom);
-            */
+          //do nothing because this is handled in fillVectors()
         }
 
         //display private messages to user, if INT code found
@@ -527,117 +492,121 @@ public:
   //also provides functionality to other functions
   void fillVectors()
   {
-      //get size of current event
-      int logLength = sysLog.size();
+    
+    memberList.clear();
+    memberListLength.clear();
+    ignoreList.clear();
+    ignoreListLength.clear();
+    roomList.clear();
+    roomListLength.clear();
+    //get size of current event
+    int logLength = sysLog.size();
 
-      //loop through all events
-      for (int i = logLength-1; i>=0;i--)
+    //loop through all events
+    for (int i = 0; i < logLength; i++)
+    {
+      //move into local variable
+      string str(sysLog.at(i));
+
+      //chosen format
+      string delimiter = ";";
+
+      //get first token
+      string dateTime = str.substr(0, str.find(delimiter));
+
+      //erase first token
+      str.erase(0, str.find(delimiter) + 1);
+
+      //get second token
+      string action = str.substr(0, str.find(delimiter));
+
+      //erase second token
+      str.erase(0, str.find(delimiter) + 1);
+
+      //find users in ignore events and add them from the vector
+      if (action == "Ignore")
       {
-        //move into local variable
-        string str(sysLog.at(i));
-
-        //chosen format
-        string delimiter = ";";
-
-        //get first token
-        string dateTime = str.substr(0, str.find(delimiter));
-
-        //erase first token
-        str.erase(0, str.find(delimiter)+1);
-
-        //get second token
-        string action = str.substr(0, str.find(delimiter));
-
-        //erase second token
-        str.erase(0, str.find(delimiter)+1);
-
-        //find users in ignore events and add them from the vector
-        if (action == "Ignore")
+        string sender = str.substr(0, str.find(delimiter));
+        str.erase(0, str.find(delimiter) + 1);
+        string offender = str.substr(0, str.find(delimiter));
+        if (find(ignoreList.begin(), ignoreList.end(), offender) != ignoreList.end())
         {
-          string sender = str.substr(0, str.find(delimiter));
-          str.erase(0, str.find(delimiter)+1);
-          string offender = str.substr(0, str.find(delimiter));
-          if (find(ignoreList.begin(), ignoreList.end(),offender)!=ignoreList.end())
-          {
-
-          }
-          else if (getNick() == sender)
-          {
-            ignoreList.push_back(offender);
-            ignoreListLength.push_back(offender.length());
-          }
-
         }
-        else if (action == "DeleteRoom")
+        else if (getNick() == sender)
         {
-          string room = str.substr(0, str.find(delimiter));
-          int len = roomList.size();
-          for (int j = 0; j < len; j++)
+          ignoreList.push_back(offender);
+          ignoreListLength.push_back(offender.length());
+        }
+      }
+      else if (action == "DeleteRoom")
+      {
+        string room = str.substr(0, str.find(delimiter));
+        int len = roomList.size();
+        for (int j = 0; j < len; j++)
+        {
+          if (room == roomList.at(j))
           {
-            if (room == roomList.at(j))
-            {
-              roomList.erase(roomList.begin() + j);
-              roomListLength.erase(roomListLength.begin() + j);
-            }
+            roomList.erase(roomList.begin() + j);
+            roomListLength.erase(roomListLength.begin() + j);
           }
         }
-        else if (action == "CreateRoom")
-        {
-          string room = str.substr(0, str.find(delimiter));
-          int len = roomList.size();
-          int found = 0;
+      }
+      else if (action == "CreateRoom")
+      {
+        string room = str.substr(0, str.find(delimiter));
+        int len = roomList.size();
+        int found = 0;
 
-          for (int j = 0; j < len; j++)
+        for (int j = 0; j < len; j++)
+        {
+          if (room == roomList.at(j))
           {
-            if (room == roomList.at(j))
-            {
-              found = 1;
-            }
-          }
-          if (found == 0)
-          {
-            int roomLen = room.length();
-            roomList.push_back(room);
-            roomListLength.push_back(roomLen);
+            found = 1;
           }
         }
-        //find users in connect events and add them to the vector
-        else if (action == "Connected")
+        if (found == 0)
         {
-          string person = str.substr(0, str.find(delimiter));
-          int len = memberList.size();
-          int found = 0;
+          int roomLen = room.length();
+          roomList.push_back(room);
+          roomListLength.push_back(roomLen);
+        }
+      }
+      //find users in connect events and add them to the vector
+      else if (action == "Connected")
+      {
+        string person = str.substr(0, str.find(delimiter));
+        int len = memberList.size();
+        int found = 0;
 
-          
-          for (int j = 0; j<len;j++)
-          {
-            if (person == memberList.at(j))
-            {
-                found = 1;
-            }
-          }
-          if (found == 0)
-          {
-              int personLen = person.length();
-              memberList.push_back(person);
-              memberListLength.push_back(personLen);
-          }
-        }
-        //find users in disconnect events and remove them from the vector
-        else if (action == "Disconnected")
+        for (int j = 0; j < len; j++)
         {
-          string person = str.substr(0, str.find(delimiter));
-          int len = memberList.size();
-          for (int j = 0; j<len;j++)
+          if (person == memberList.at(j))
           {
-            if (person == memberList.at(j))
-            {
-                memberList.erase (memberList.begin() + j);
-                memberListLength.erase (memberListLength.begin() + j);
-            }
+            found = 1;
           }
         }
-        prompt();
+        if (found == 0)
+        {
+          int personLen = person.length();
+          memberList.push_back(person);
+          memberListLength.push_back(personLen);
+        }
+      }
+      //find users in disconnect events and remove them from the vector
+      else if (action == "Disconnected")
+      {
+        string person = str.substr(0, str.find(delimiter));
+        int len = memberList.size();
+        for (int j = 0; j < len; j++)
+        {
+          if (person == memberList.at(j))
+          {
+            memberList.erase(memberList.begin() + j);
+            memberListLength.erase(memberListLength.begin() + j);
+          }
+        }
+      }
+      prompt();
       }
 
   }
@@ -746,17 +715,6 @@ public:
     return str;
 
   }
-
-
-
-  void DeleteChatRoom(int index)
-  {
-    roomList.erase(roomList.begin() + index);
-  }
-  void CreateChatRoom(string chatRoomName)
-  {
-    roomList.push_back(chatRoomName);
-  }
   string showRoomList()
   {
     fillVectors();
@@ -781,11 +739,6 @@ public:
     getstr(str);
     return str;
   }
-
-
-
-
-
   //function redraws the header (clock, chat room name, etc) and the footer (the row of "=")
   void showHeaderFooter()
   {
@@ -939,22 +892,37 @@ private:
   vector<string> roomList;
   vector<int> roomListLength;
 };
+static void handle_signal(int sig)
+{
 
+}
 int main(int argc, char* argv[])
 {
     try
     {
-        //built in code written in asio example
-        if (argc != 3)
-        {
-            std::cerr << "Usage: chat_client <host> <port>\n";
-            return 1;
+      
+
+      //built in code written in asio example
+      if (argc != 3)
+      {
+        std::cerr << "Usage: chat_client <host> <port>\n";
+        return 1;
         }
         asio::io_context io_context;
         tcp::resolver resolver(io_context);
         auto endpoints = resolver.resolve(argv[1], argv[2]);
         chat_client c(io_context, endpoints);
         std::thread t([&io_context](){ io_context.run(); });
+
+        //signal builder#1
+        struct sigaction act;
+        memset(&act, '\0', sizeof(act));
+        act.sa_handler = &handle_signal;
+        if (sigaction(SIGINT, &act, NULL) < 0)
+        {
+          perror("sigaction: ");
+          return 1;
+        }
 
         //initlize ncurses 
         initscr();
@@ -998,8 +966,9 @@ int main(int argc, char* argv[])
 
           //convert to string
           string line(str);
-          
+
           //COMMANDS
+          
           //display help menu
           if (line.find("/help") == 0)
           {
@@ -1145,6 +1114,11 @@ int main(int argc, char* argv[])
           else if (line.find("/") == 0)
           {
 
+          }
+          //no message
+          else if (line.length() == 0)
+          {
+           
           }
           //no valid command was found
           //assume that this is just a regular chat message to current room
