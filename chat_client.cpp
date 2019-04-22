@@ -52,6 +52,42 @@ public:
       clearRow(maxrow-1);
       mvprintw(maxrow-1,1," %s: ",char_array);
   }
+  string checkRoomExists(string currentRoomSender)
+  {
+    fillVectors();
+    clearChat();
+
+    int found = 0;
+    int len = roomList.size();
+
+    for (int j = 0; j < len; j++)
+    {
+      if (currentRoomSender == roomList.at(j))
+      {
+        found = 1;
+      }
+    }
+    if (found == 1)
+    {
+      currentRoom.assign(currentRoomSender);
+      prompt();
+      return "/";
+    }
+    else
+    {
+      int n = currentRoomSender.length();
+      char char_array[n + 1];
+
+      strcpy(char_array, currentRoomSender.c_str());
+      mvprintw(row, col, "[%s] does not exist", char_array);
+      prompt();
+      //read user input
+      char str[100];
+      getstr(str);
+      return str;
+    }
+    
+  }
   //set local chat_client variable to new room name
   void changeRoom(string currentRoomSender)
   {
@@ -406,6 +442,7 @@ public:
         }
         else if (action == "DeleteRoom")
         {
+          /*
           int found = 0;
           //get third token
           string nRoom = str.substr(0, str.find(delimiter));
@@ -425,9 +462,11 @@ public:
           if (found == 1)
             DeleteChatRoom(i);
           //pop for remove
+          */
         }
         else if (action == "CreateRoom")
         {
+          /*
           //get third token
           string nRoom = str.substr(0, str.find(delimiter));
           //erase third token
@@ -448,6 +487,7 @@ public:
           //push for create
           if (found == 0)
             CreateChatRoom(nRoom);
+            */
         }
 
         //display private messages to user, if INT code found
@@ -527,6 +567,39 @@ public:
             ignoreListLength.push_back(offender.length());
           }
 
+        }
+        else if (action == "DeleteRoom")
+        {
+          string room = str.substr(0, str.find(delimiter));
+          int len = roomList.size();
+          for (int j = 0; j < len; j++)
+          {
+            if (room == roomList.at(j))
+            {
+              roomList.erase(roomList.begin() + j);
+              roomListLength.erase(roomListLength.begin() + j);
+            }
+          }
+        }
+        else if (action == "CreateRoom")
+        {
+          string room = str.substr(0, str.find(delimiter));
+          int len = roomList.size();
+          int found = 0;
+
+          for (int j = 0; j < len; j++)
+          {
+            if (room == roomList.at(j))
+            {
+              found = 1;
+            }
+          }
+          if (found == 0)
+          {
+            int roomLen = room.length();
+            roomList.push_back(room);
+            roomListLength.push_back(roomLen);
+          }
         }
         //find users in connect events and add them to the vector
         else if (action == "Connected")
@@ -951,6 +1024,13 @@ int main(int argc, char* argv[])
           {
             line.assign(c.showRoomList());
           }
+          //join a different existing room
+          if (line.find("/join") == 0)
+          {
+
+            string newRoom = line.substr(line.find(" ") + 1, line.length());
+            line.assign(c.checkRoomExists(newRoom));
+          }
           //file transfer
           if (line.find("/transfer") == 0)
           {
@@ -989,13 +1069,8 @@ int main(int argc, char* argv[])
           }
 
           
-          //join a different existing room
-          else if (line.find("/join") == 0)
-          {
-              //TODO -  verify that room exists
-              string newRoom = line.substr(line.find(" ")+1, line.length());
-              c.changeRoom(newRoom);
-          }
+          
+                    
           //leave current room. default lobby
           else if (line.find("/leave") == 0)
           {
@@ -1038,16 +1113,16 @@ int main(int argc, char* argv[])
           //create new chat room
           else if (line.find("/create") == 0)
           {
-              string room = line.substr(line.find(" ")+1, line.length());
-              string event(c.getTime() + ";CreateRoom;" + room + ";" + c.getNick());
+              string newRoom = line.substr(line.find(" ")+1, line.length());
+              string event(c.getTime() + ";CreateRoom;" + newRoom + ";" + c.getNick());
               c.sendEvent(event);
 
           }
           //delete existing chat room
           else if (line.find("/delete") == 0)
           {
-              string room = line.substr(line.find(" ")+1, line.length());
-              string event(c.getTime() + ";DeleteRoom;" + room + ";" + c.getNick());
+              string newRoom = line.substr(line.find(" ")+1, line.length());
+              string event(c.getTime() + ";DeleteRoom;" + newRoom + ";" + c.getNick());
               c.sendEvent(event);
           }
           //quit the app
@@ -1095,3 +1170,4 @@ int main(int argc, char* argv[])
         endwin();
         return 0;
 }
+
