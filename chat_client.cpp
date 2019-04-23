@@ -109,9 +109,27 @@ public:
     {
       clearChat();
       getScreen();
+      int error = 0;
       //initilize place to store user's account name
       char nameArray[20] = {0};
-      if (dupe == 0)
+
+      if (getMemberCount() >= 50)
+      {
+        char welcome1[] = "Welcome to Super Chat";
+        char welcome2[] = "*MAX USERS ONLINE*";
+        char welcome3[] = "";
+        mvprintw((maxrow / 2) - 3, (maxcol - strlen(welcome1)) / 2, "%s", welcome1);
+        mvprintw(maxrow / 2, (maxcol - strlen(welcome2)) / 2, "%s", welcome2);
+        mvprintw(maxrow-1, 1, "%s", welcome3);
+
+        error = 1;
+        prompt();
+      }
+
+  
+      
+      
+      else if (dupe == 0)
       {
         char welcome1[]="Welcome to Super Chat";
         char welcome2[]="Enter user name: ";
@@ -143,7 +161,7 @@ public:
 
         }
       }
-      if (found == 1)
+      if (found == 1 || error == 1)
       {
         sleep_for(nanoseconds(1000000));
         loginScreen(1);
@@ -158,6 +176,8 @@ public:
         showHeaderFooter();
         prompt();
       }
+      
+      
     }
     catch (char *excp)
     {
@@ -487,6 +507,14 @@ public:
       prompt();
       }
   }
+  int getMemberCount()
+  {
+    return memberList.size();
+  }
+  int getRoomCount()
+  {
+    return roomList.size();
+  }
   //populate memberlist and ignorelist vectors
   //used for displaying both lists to user
   //also provides functionality to other functions
@@ -680,6 +708,21 @@ public:
         int printOnRow = maxrow-(4+j);
         mvprintw(printOnRow,0, "[%s]", char_array);
       }
+    prompt();
+    //read user input
+    char str[100];
+    getstr(str);
+    return str;
+  }
+  string showErrorMsg(string msg)
+  {
+    clearChat();
+    int n = msg.length();
+    char char_array[n + 1];
+    strcpy(char_array, msg.c_str());
+
+    mvprintw(maxrow-3, 1, "**%s**", char_array);
+    
     prompt();
     //read user input
     char str[100];
@@ -950,11 +993,15 @@ int main(int argc, char* argv[])
         //slow down the loop so that the server can catch up
         sleep_for(nanoseconds(1000000));
 
+        int loop = 1;
         //show login screen so user can input account name
         c.loginScreen(0);
         
+        
+          
+        
         //main loop starts here
-        int loop = 1;
+        
         while (loop == 1)
         {
           //slow down the loop so that the server can catch up
@@ -978,6 +1025,7 @@ int main(int argc, char* argv[])
 
           //COMMANDS
           
+
           //display help menu
           if (line.find("/help") == 0)
           {
@@ -1091,10 +1139,16 @@ int main(int argc, char* argv[])
           //create new chat room
           else if (line.find("/create") == 0)
           {
-              string newRoom = line.substr(line.find(" ")+1, line.length());
+            if (c.getRoomCount() >= 10)
+            {
+              line.assign(c.showErrorMsg("Max rooms reached"));
+            }
+            else
+            {
+              string newRoom = line.substr(line.find(" ") + 1, line.length());
               string event(c.getTime() + ";CreateRoom;" + newRoom + ";" + c.getNick());
               c.sendEvent(event);
-
+            }
           }
           //delete existing chat room
           else if (line.find("/delete") == 0)
@@ -1103,7 +1157,7 @@ int main(int argc, char* argv[])
               string event(c.getTime() + ";DeleteRoom;" + newRoom + ";" + c.getNick());
               c.sendEvent(event);
           }
-          //quit the app
+          //qduit the app
           else if (line.find("/quit") == 0)
           {
               string event(c.getTime() + ";Disconnected;" + c.getNick() + ";");
