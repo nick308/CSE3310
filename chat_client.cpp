@@ -734,9 +734,9 @@ public:
   {
     //build array to display
     clearChat();
-    int size = 17;
+    int size = 16;
     string help[size];
-    help[16] = "**HELP MENU**";
+ 
     help[15] = "/quit - exit SuperChat";
     help[14] = "/time - turn off timestamps";
     help[13] = "/memberlist - show all members online";
@@ -752,13 +752,13 @@ public:
     help[3] = "/ignorelist - show your ignored users";
     help[2] = "/debug - show raw event log (admin only)";
     help[1] = "/transfer <path> <user> - transfer file to another user";
-    help[0] = "**Enter any key to close menu**";
+    help[0] = "**Enter any key to close help menu**";
     for (int i = 0 ;i<size;i++)
     {
         int n = help[i].length();
         char char_array[n + 1];
         strcpy(char_array, help[i].c_str());
-        mvprintw(maxrow-(4+i),0, char_array);
+        mvprintw(maxrow-(3+i),0, char_array);
     }
     prompt();
     //read user input
