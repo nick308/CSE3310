@@ -113,6 +113,8 @@ public:
       //initilize place to store user's account name
       char nameArray[20] = {0};
 
+
+
       if (getMemberCount() >= 50)
       {
         char welcome1[] = "Welcome to Super Chat";
@@ -127,9 +129,13 @@ public:
       }
 
   
+      else
+      {
+        
       
       
-      else if (dupe == 0)
+      
+      if (dupe == 0)
       {
         char welcome1[]="Welcome to Super Chat";
         char welcome2[]="Enter user name: ";
@@ -177,7 +183,7 @@ public:
         prompt();
       }
       
-      
+      }
     }
     catch (char *excp)
     {
